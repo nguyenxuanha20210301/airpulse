@@ -66,9 +66,9 @@ which is ignored by git, and in Kubernetes secrets.
 
 ## Getting started
 
-Requirements on the host, Python 3.11, GNU make, Java 17 for running Spark locally, and for the
-cluster kubectl, Helm and kind. `uv` is used when available, otherwise the standard `venv` and
-`pip` are used.
+Requirements on the host, Python 3.11, GNU make, a JDK 17 for running Spark locally, Docker,
+and for the cluster kind, kubectl and Helm. `uv` is used when available, otherwise the standard
+`venv` and `pip` are used. The makefile finds a JDK 17 under `/usr/lib/jvm` on its own.
 
 ```bash
 cp .env.example .env
@@ -76,24 +76,51 @@ make setup
 make check
 ```
 
-`make help` lists every target. The cluster targets (`cluster-up`, `deploy`, `port-forward`,
-`demo`) call scripts under `deploy/scripts/`, which are added together with the infrastructure
-work. The step by step rebuild procedure will be documented in `docs/runbook.md`.
+`make help` lists every target. The cluster targets call the scripts under `deploy/scripts/`.
 
-## Planned version matrix
+```bash
+make cluster-up PROFILE=dev
+make deploy PROFILE=dev
+make port-forward PROFILE=dev
+make demo PROFILE=dev
+```
+
+The step by step procedure, including laptop runs of the jobs on local directories, is in
+`docs/runbook.md`. The architecture and the reasons behind each component are in
+`docs/architecture.md`, the sources and their quirks in `docs/data_sources.md`.
+
+## Jobs
+
+| Module | Layer | What it does |
+|---|---|---|
+| `airpulse.ingestion.producer` | ingestion | polls the sources and publishes raw events to Kafka |
+| `airpulse.ingestion.backfill` | ingestion | loads years of hourly history into the raw layer |
+| `airpulse.ingestion.replay` | ingestion | replays history into Kafka at a configurable speed |
+| `airpulse.streaming.speed_layer` | speed | archive, clean, windows, alerts and forecast queries |
+| `airpulse.batch.raw_to_clean` | batch | exact rebuild of the clean layer |
+| `airpulse.batch.trends` | batch | daily, monthly, seasonal, yearly tables and the heatmap |
+| `airpulse.batch.correlations` | batch | weather and pollution correlations |
+| `airpulse.batch.features` | batch | the forecast feature table |
+| `airpulse.mapreduce.monthly_average` | batch | the monthly mean in the MapReduce pattern |
+| `airpulse.ml.train` | ml | trains and evaluates the forecast models |
+| `airpulse.ml.evaluate` | ml | compares stored models with the baselines |
+| `airpulse.serving.register_tables` | serving | registers the datasets in the Hive metastore |
+
+Every job runs as `python -m <module> --config configs/<profile>.yaml` and accepts `--input`
+and `--output` overrides for local runs.
+
+## Version matrix
 
 | Component | Version |
 |---|---|
-| Python | 3.11 |
-| Spark and PySpark | 3.5.x, Scala 2.12 connectors |
+| Python | 3.11 locally, 3.10 in the Spark image |
+| Spark and PySpark | 3.5.9, Scala 2.12 connectors, Kafka connector 3.5.9, Cassandra connector 3.5.1 |
 | Java for Spark | 17 |
-| Kafka | 3.x via Strimzi, KRaft mode |
-| Hadoop HDFS | 3.3.x |
-| Cassandra | 4.1.x |
-| Trino | current release |
-| Superset | 4.x |
-
-The matrix is confirmed as each component is installed on the cluster.
+| Kafka | Strimzi operator, KRaft mode |
+| Hadoop HDFS | 3.4.3 |
+| Hive metastore | 4.0.1 |
+| Cassandra | 4.1 |
+| Trino, Superset, monitoring | current Helm charts from the official repositories |
 
 ## Conventions
 

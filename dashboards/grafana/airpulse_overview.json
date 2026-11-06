@@ -1,0 +1,287 @@
+{
+  "uid": "airpulse-overview",
+  "title": "AirPulse overview",
+  "tags": [
+    "airpulse"
+  ],
+  "timezone": "utc",
+  "schemaVersion": 39,
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "location",
+        "label": "province point",
+        "type": "query",
+        "datasource": {
+          "type": "trino-datasource",
+          "uid": "trino"
+        },
+        "query": "SELECT DISTINCT location_id FROM cassandra.airpulse.rt_air_latest ORDER BY 1",
+        "current": {
+          "text": "ha_noi",
+          "value": "ha_noi"
+        },
+        "refresh": 1,
+        "includeAll": false
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "current AQI by province, computed from PM2.5, PM10, NO2, O3, SO2, CO",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT location_id, event_ts_utc, aqi_computed, aqi_category, aqi_dominant, pm2_5_ugm3, pm10_ugm3, aqi_us FROM cassandra.airpulse.rt_air_latest ORDER BY aqi_computed DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "top ten polluted provinces now",
+      "type": "barchart",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 10
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT location_id, aqi_computed FROM cassandra.airpulse.rt_air_latest ORDER BY aqi_computed DESC LIMIT 10",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "orientation": "horizontal",
+        "showValue": "always"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "title": "PM2.5 for the selected point, clean hourly history",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT event_ts_utc AS time, pm2_5_ugm3 FROM hive.airpulse.clean_air_hourly WHERE location_id = '${location}' AND event_ts_utc >= $__timeFrom AND event_ts_utc <= $__timeTo ORDER BY 1",
+          "format": "timeseries",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "title": "rolling averages for the selected point, 1h 3h 24h windows",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT window_end AS time, window_size AS metric, avg_pm2_5 FROM cassandra.airpulse.rt_air_windows WHERE location_id = '${location}' AND window_end >= $__timeFrom ORDER BY 1",
+          "format": "timeseries",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "title": "alerts of the last two days",
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT event_ts_utc, location_id, kind, metric, value, threshold, severity FROM hive.airpulse_views.recent_alerts ORDER BY event_ts_utc DESC LIMIT 200",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 6,
+      "title": "forecast against actual for the selected point, PM2.5 six hours ahead",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT forecast_ts_utc AS time, predicted, actual FROM hive.airpulse_views.forecast_vs_actual WHERE location_id = '${location}' AND target = 'pm2_5' AND horizon_h = 6 AND forecast_ts_utc >= $__timeFrom ORDER BY 1",
+          "format": "timeseries",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 7,
+      "title": "temperature and humidity for the selected point",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT event_ts_utc AS time, temperature_c, humidity_pct FROM hive.airpulse.clean_weather_hourly WHERE location_id = '${location}' AND event_ts_utc >= $__timeFrom AND event_ts_utc <= $__timeTo ORDER BY 1",
+          "format": "timeseries",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    },
+    {
+      "id": 8,
+      "title": "days above the WHO daily PM2.5 limit per month, selected point",
+      "type": "barchart",
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 9
+      },
+      "datasource": {
+        "type": "trino-datasource",
+        "uid": "trino"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "trino-datasource",
+            "uid": "trino"
+          },
+          "rawSQL": "SELECT CAST(year AS varchar) || '-' || lpad(CAST(month AS varchar), 2, '0') AS month, days_above_who, days_above_qcvn FROM hive.airpulse.curated_air_monthly WHERE location_id = '${location}' ORDER BY year, month",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {},
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      }
+    }
+  ]
+}
