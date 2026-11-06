@@ -1,0 +1,45 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.cache/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# secrets and local environment
+.env
+.env.*
+!.env.example
+
+# notebooks
+.ipynb_checkpoints/
+
+# runtime output, always kept inside the repo
+data/
+output/
+logs/
+*.log
+checkpoints/
+spark-warehouse/
+metastore_db/
+derby.log
+
+# kubernetes and helm
+.kube/
+kubeconfig*
+deploy/helm/**/charts/
+deploy/helm/**/*.tgz
+
+# editors and os
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
