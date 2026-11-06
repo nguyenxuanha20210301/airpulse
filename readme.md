@@ -58,9 +58,11 @@ docs/           public documentation, architecture, data sources, runbook and re
 
 Every job is a module with a `main` function and runs as
 `python -m airpulse.<layer>.<job> --config configs/<profile>.yaml`. Nothing is hardcoded, every
-host, port, path and topic comes from `configs/` and can be overridden with environment variables
-prefixed `AIRPULSE_`. Secrets only live in `.env`, which is ignored by git, and in Kubernetes
-secrets.
+host, port, path and topic comes from `configs/`. `base.yaml` holds the shared values, each
+profile file extends it and overrides a few keys, and any environment variable named
+`AIRPULSE_<section>__<key>` (nested keys joined with a double underscore, for example
+`AIRPULSE_KAFKA__BOOTSTRAP_SERVERS`) overrides the merged result. Secrets only live in `.env`,
+which is ignored by git, and in Kubernetes secrets.
 
 ## Getting started
 

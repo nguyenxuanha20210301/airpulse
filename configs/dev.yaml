@@ -1,0 +1,25 @@
+# single node profile for development, one broker, one datanode, one cassandra node.
+# service names follow the helm releases in deploy and are adjusted there if they change.
+extends: base.yaml
+
+kafka:
+  bootstrap_servers: kafka-cluster-kafka-bootstrap.airpulse.svc:9092
+  partitions: 3
+  replication_factor: 1
+
+hdfs:
+  url: hdfs://hdfs-namenode.airpulse.svc:8020
+  replication: 1
+
+cassandra:
+  hosts:
+    - cassandra.airpulse.svc
+  replication_factor: 1
+  consistency: ONE
+
+trino:
+  url: http://trino.airpulse.svc:8080
+
+spark:
+  executor_instances: 1
+  shuffle_partitions: 4

@@ -1,0 +1,24 @@
+# full profile for the presentation, three brokers, three datanodes, three cassandra nodes.
+extends: base.yaml
+
+kafka:
+  bootstrap_servers: kafka-cluster-kafka-bootstrap.airpulse.svc:9092
+  partitions: 6
+  replication_factor: 3
+
+hdfs:
+  url: hdfs://hdfs-namenode.airpulse.svc:8020
+  replication: 2
+
+cassandra:
+  hosts:
+    - cassandra.airpulse.svc
+  replication_factor: 3
+  consistency: LOCAL_QUORUM
+
+trino:
+  url: http://trino.airpulse.svc:8080
+
+spark:
+  executor_instances: 2
+  shuffle_partitions: 12

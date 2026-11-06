@@ -1,0 +1,64 @@
+location_id,name,lat,lon,region,province
+ha_noi,Ha Noi,21.0285,105.8542,north,Ha Noi
+hai_phong,Hai Phong,20.8449,106.6881,north,Hai Phong
+quang_ninh,Ha Long,20.9711,107.0448,north,Quang Ninh
+bac_ninh,Bac Ninh,21.1861,106.0763,north,Bac Ninh
+bac_giang,Bac Giang,21.2731,106.1946,north,Bac Ninh
+hai_duong,Hai Duong,20.9373,106.3146,north,Hai Phong
+hung_yen,Hung Yen,20.6464,106.0511,north,Hung Yen
+thai_binh,Thai Binh,20.4463,106.3366,north,Hung Yen
+nam_dinh,Nam Dinh,20.4388,106.1621,north,Ninh Binh
+ha_nam,Phu Ly,20.5411,105.9139,north,Ninh Binh
+ninh_binh,Ninh Binh,20.2506,105.9745,north,Ninh Binh
+vinh_phuc,Vinh Yen,21.3089,105.6047,north,Phu Tho
+phu_tho,Viet Tri,21.3227,105.4024,north,Phu Tho
+hoa_binh,Hoa Binh,20.8133,105.3383,north,Phu Tho
+thai_nguyen,Thai Nguyen,21.5942,105.8482,north,Thai Nguyen
+bac_kan,Bac Kan,22.1470,105.8348,north,Thai Nguyen
+cao_bang,Cao Bang,22.6657,106.2577,north,Cao Bang
+lang_son,Lang Son,21.8537,106.7615,north,Lang Son
+tuyen_quang,Tuyen Quang,21.8233,105.2180,north,Tuyen Quang
+ha_giang,Ha Giang,22.8233,104.9836,north,Tuyen Quang
+lao_cai,Lao Cai,22.4856,103.9707,north,Lao Cai
+yen_bai,Yen Bai,21.7168,104.8986,north,Lao Cai
+lai_chau,Lai Chau,22.3964,103.4582,north,Lai Chau
+dien_bien,Dien Bien Phu,21.3860,103.0230,north,Dien Bien
+son_la,Son La,21.3256,103.9188,north,Son La
+thanh_hoa,Thanh Hoa,19.8067,105.7852,central,Thanh Hoa
+nghe_an,Vinh,18.6796,105.6813,central,Nghe An
+ha_tinh,Ha Tinh,18.3559,105.8877,central,Ha Tinh
+quang_binh,Dong Hoi,17.4659,106.6222,central,Quang Tri
+quang_tri,Dong Ha,16.8163,107.1003,central,Quang Tri
+thua_thien_hue,Hue,16.4637,107.5909,central,Hue
+da_nang,Da Nang,16.0544,108.2022,central,Da Nang
+quang_nam,Tam Ky,15.5736,108.4740,central,Da Nang
+quang_ngai,Quang Ngai,15.1214,108.8044,central,Quang Ngai
+kon_tum,Kon Tum,14.3497,108.0005,central,Quang Ngai
+binh_dinh,Quy Nhon,13.7830,109.2197,central,Gia Lai
+gia_lai,Pleiku,13.9833,108.0000,central,Gia Lai
+phu_yen,Tuy Hoa,13.0882,109.3092,central,Dak Lak
+dak_lak,Buon Ma Thuot,12.6667,108.0500,central,Dak Lak
+khanh_hoa,Nha Trang,12.2388,109.1967,central,Khanh Hoa
+ninh_thuan,Phan Rang,11.5676,108.9908,central,Khanh Hoa
+dak_nong,Gia Nghia,12.0045,107.6907,central,Lam Dong
+lam_dong,Da Lat,11.9404,108.4583,central,Lam Dong
+binh_thuan,Phan Thiet,10.9289,108.1021,central,Lam Dong
+ho_chi_minh,Ho Chi Minh,10.8231,106.6297,south,Ho Chi Minh
+binh_duong,Thu Dau Mot,10.9804,106.6519,south,Ho Chi Minh
+ba_ria_vung_tau,Vung Tau,10.4114,107.1362,south,Ho Chi Minh
+dong_nai,Bien Hoa,10.9574,106.8427,south,Dong Nai
+binh_phuoc,Dong Xoai,11.5352,106.8830,south,Dong Nai
+tay_ninh,Tay Ninh,11.3100,106.0983,south,Tay Ninh
+long_an,Tan An,10.5359,106.4137,south,Tay Ninh
+tien_giang,My Tho,10.3600,106.3600,south,Dong Thap
+dong_thap,Cao Lanh,10.4600,105.6300,south,Dong Thap
+ben_tre,Ben Tre,10.2433,106.3756,south,Vinh Long
+tra_vinh,Tra Vinh,9.9347,106.3452,south,Vinh Long
+vinh_long,Vinh Long,10.2537,105.9722,south,Vinh Long
+an_giang,Long Xuyen,10.3864,105.4352,south,An Giang
+kien_giang,Rach Gia,10.0125,105.0809,south,An Giang
+can_tho,Can Tho,10.0452,105.7469,south,Can Tho
+hau_giang,Vi Thanh,9.7845,105.4701,south,Can Tho
+soc_trang,Soc Trang,9.6025,105.9739,south,Can Tho
+bac_lieu,Bac Lieu,9.2941,105.7278,south,Ca Mau
+ca_mau,Ca Mau,9.1769,105.1524,south,Ca Mau

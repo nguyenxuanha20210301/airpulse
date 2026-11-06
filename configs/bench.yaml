@@ -1,0 +1,17 @@
+# benchmark profile, the demo cluster under replayed load.
+extends: demo.yaml
+
+kafka:
+  partitions: 12
+
+spark:
+  executor_instances: 4
+  shuffle_partitions: 24
+
+streaming:
+  trigger_interval: 10 seconds
+
+replay:
+  speed_factor: 100
+  start_date: 2020-01-01
+  end_date: 2020-12-31

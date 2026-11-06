@@ -1,0 +1,137 @@
+# values shared by every profile. a profile file names the file it extends and overrides single
+# keys. any environment variable named AIRPULSE_<section>__<key> overrides the merged result, for
+# example AIRPULSE_KAFKA__BOOTSTRAP_SERVERS, nested keys are joined with a double underscore.
+# relative paths in this file are resolved against the directory that holds it.
+
+project: airpulse
+schema_version: 1
+timezone: Asia/Ho_Chi_Minh
+
+locations:
+  # sampling points are the centers of the 63 former provinces. the province column holds the
+  # unit each point belongs to after the 2025 merger, so results can be grouped either way.
+  file: locations/vn_provinces.csv
+
+sources:
+  open_meteo:
+    weather_url: https://api.open-meteo.com/v1/forecast
+    air_quality_url: https://air-quality-api.open-meteo.com/v1/air-quality
+    archive_url: https://archive-api.open-meteo.com/v1/archive
+    timeout_s: 30
+    # the api accepts several coordinates per call, which keeps the daily request count low.
+    locations_per_request: 10
+    weather_variables:
+      - temperature_2m
+      - relative_humidity_2m
+      - dew_point_2m
+      - apparent_temperature
+      - precipitation
+      - rain
+      - weather_code
+      - pressure_msl
+      - surface_pressure
+      - cloud_cover
+      - wind_speed_10m
+      - wind_direction_10m
+      - wind_gusts_10m
+    air_variables:
+      - pm10
+      - pm2_5
+      - carbon_monoxide
+      - nitrogen_dioxide
+      - sulphur_dioxide
+      - ozone
+      - dust
+      - uv_index
+      - us_aqi
+      - european_aqi
+  openaq:
+    base_url: https://api.openaq.org/v3
+    timeout_s: 30
+    # set through AIRPULSE_SOURCES__OPENAQ__API_KEY in .env, never in this file.
+    api_key: ""
+  openweathermap:
+    base_url: https://api.openweathermap.org/data/2.5
+    timeout_s: 30
+    api_key: ""
+
+ingestion:
+  enabled_sources:
+    - open_meteo
+  interval_minutes: 30
+  # each run refetches the last few hours so late corrections are picked up, duplicates are
+  # dropped downstream by event_id.
+  past_hours: 3
+  history_start: 2015-01-01
+
+kafka:
+  bootstrap_servers: ""
+  partitions: 3
+  replication_factor: 1
+  consumer_group_prefix: airpulse
+  topics:
+    weather_raw: weather.raw
+    air_raw: air.raw
+    weather_clean: weather.clean
+    air_clean: air.clean
+    air_alerts: air.alerts
+
+hdfs:
+  url: ""
+  # every dataset lives under root as <layer>/<dataset>/dt=YYYY-MM-DD.
+  root: /airpulse
+  replication: 1
+
+cassandra:
+  hosts: []
+  port: 9042
+  keyspace: airpulse
+  replication_factor: 1
+  consistency: ONE
+  tables:
+    air_latest: rt_air_latest
+    air_windows: rt_air_windows
+    alerts: rt_alerts
+    forecast: rt_forecast
+
+trino:
+  url: ""
+  hive_catalog: hive
+  cassandra_catalog: cassandra
+  schema: airpulse
+
+spark:
+  # an empty master keeps whatever spark submit or the operator provides, set local[*] for a laptop run.
+  master: ""
+  driver_memory: 1g
+  executor_instances: 2
+  executor_memory: 1g
+  executor_cores: 1
+  shuffle_partitions: 8
+
+streaming:
+  trigger_interval: 1 minute
+  watermark_delay: 2 hours
+  windows:
+    - 1 hour
+    - 3 hours
+    - 24 hours
+  slide: 10 minutes
+  # relative to hdfs root.
+  checkpoint_dir: checkpoints
+
+aqi:
+  standard: us_epa
+  pm2_5_daily_limit_who: 15
+  pm2_5_daily_limit_qcvn: 50
+
+alerts:
+  aqi_level: 150
+  temperature_hot_c: 39
+  temperature_cold_c: 13
+
+replay:
+  speed_factor: 1
+  topic_suffix: replay
+  start_date: null
+  end_date: null
