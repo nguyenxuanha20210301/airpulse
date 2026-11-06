@@ -1,0 +1,10 @@
+.*
+data
+output
+logs
+notebooks
+tests
+docs
+dashboards
+*.md
+!readme.md

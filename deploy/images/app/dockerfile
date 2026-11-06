@@ -1,0 +1,19 @@
+# image for the python jobs that do not need spark, the producer and small cli tools.
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /opt/airpulse
+COPY pyproject.toml readme.md ./
+COPY src ./src
+COPY configs ./configs
+COPY schemas ./schemas
+# pyspark is a heavy dependency the producer never imports, it is dropped from this image.
+RUN sed -i '/"pyspark/d' pyproject.toml && pip install --no-deps . \
+    && pip install confluent-kafka requests pyyaml pydantic python-dotenv
+
+RUN useradd --create-home --uid 1000 airpulse
+USER airpulse
+CMD ["python", "-m", "airpulse.ingestion.producer", "--config", "/etc/airpulse/dev.yaml"]

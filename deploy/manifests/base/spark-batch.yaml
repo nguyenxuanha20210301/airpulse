@@ -1,0 +1,414 @@
+# the batch layer as scheduled spark applications, one per job, staggered through the night so
+# each step reads what the previous one wrote. times are UTC, one in the morning in vietnam.
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: batch-raw-to-clean
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "0 18 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.batch.raw_to_clean
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: batch-trends
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "30 18 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.batch.trends
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: batch-correlations
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "45 18 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.batch.correlations
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: batch-mapreduce
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "0 19 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.mapreduce.monthly_average
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: batch-features
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "15 19 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.batch.features
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: ml-train
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "0 20 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.ml.train
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations
+---
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: ScheduledSparkApplication
+metadata:
+  name: register-tables
+  labels:
+    airpulse/layer: batch
+spec:
+  schedule: "0 21 * * *"
+  concurrencyPolicy: Forbid
+  successfulRunHistoryLimit: 3
+  failedRunHistoryLimit: 3
+  template:
+    type: Python
+    pythonVersion: "3"
+    mode: cluster
+    image: airpulse-spark:local
+    imagePullPolicy: IfNotPresent
+    mainApplicationFile: local:///opt/airpulse/run_module.py
+    arguments:
+      - airpulse.serving.register_tables
+      - --config
+      - /etc/airpulse/dev.yaml
+    sparkVersion: 3.5.9
+    restartPolicy:
+      type: OnFailure
+      onFailureRetries: 2
+      onFailureRetryInterval: 60
+    driver:
+      cores: 1
+      memory: 1g
+      serviceAccount: spark-operator-spark
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    executor:
+      instances: 2
+      cores: 1
+      memory: 1g
+      env:
+        - name: AIRPULSE_SPARK__USE_PACKAGES
+          value: "false"
+      volumeMounts:
+        - name: configs
+          mountPath: /etc/airpulse
+        - name: locations
+          mountPath: /etc/airpulse/locations
+    volumes:
+      - name: configs
+        configMap:
+          name: airpulse-configs
+      - name: locations
+        configMap:
+          name: airpulse-locations

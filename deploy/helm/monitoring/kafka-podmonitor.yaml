@@ -1,0 +1,41 @@
+# scrape the strimzi brokers and the kafka exporter.
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-resources-metrics
+  namespace: airpulse
+  labels:
+    app: strimzi
+spec:
+  selector:
+    matchExpressions:
+      - key: strimzi.io/kind
+        operator: In
+        values: ["Kafka", "KafkaNodePool"]
+  namespaceSelector:
+    matchNames:
+      - airpulse
+  podMetricsEndpoints:
+    - path: /metrics
+      port: tcp-prometheus
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: kubernetes_pod_name
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: kafka-exporter-metrics
+  namespace: airpulse
+  labels:
+    app: strimzi
+spec:
+  selector:
+    matchLabels:
+      strimzi.io/name: kafka-cluster-kafka-exporter
+  namespaceSelector:
+    matchNames:
+      - airpulse
+  podMetricsEndpoints:
+    - path: /metrics
+      port: tcp-prometheus

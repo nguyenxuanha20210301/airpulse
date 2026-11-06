@@ -1,0 +1,6 @@
+- op: replace
+  path: /spec/template/arguments/2
+  value: /etc/airpulse/demo.yaml
+- op: replace
+  path: /spec/template/executor/instances
+  value: 3

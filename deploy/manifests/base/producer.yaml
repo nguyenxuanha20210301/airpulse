@@ -1,0 +1,43 @@
+# the ingestion producer polls the apis and publishes to kafka. configs and the province list
+# are mounted from configmaps created by deploy.sh, api keys come from the airpulse-secrets secret.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: producer
+  template:
+    metadata:
+      labels:
+        app: producer
+    spec:
+      containers:
+        - name: producer
+          image: airpulse-app:local
+          imagePullPolicy: IfNotPresent
+          args: ["python", "-m", "airpulse.ingestion.producer", "--config", "/etc/airpulse/dev.yaml"]
+          envFrom:
+            - secretRef:
+                name: airpulse-secrets
+                optional: true
+          volumeMounts:
+            - name: configs
+              mountPath: /etc/airpulse
+            - name: locations
+              mountPath: /etc/airpulse/locations
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: configs
+          configMap:
+            name: airpulse-configs
+        - name: locations
+          configMap:
+            name: airpulse-locations

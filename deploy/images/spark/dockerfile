@@ -1,0 +1,39 @@
+# spark image with the package and the kafka and cassandra connectors baked in, so the
+# applications start without reaching maven. versions must match the pyspark pin in pyproject.
+FROM apache/spark:3.5.9-scala2.12-java17-python3-ubuntu
+
+ARG SPARK_VERSION=3.5.9
+ARG SCALA_VERSION=2.12
+ARG KAFKA_CLIENTS_VERSION=3.4.1
+ARG CASSANDRA_CONNECTOR_VERSION=3.5.1
+ARG COMMONS_POOL_VERSION=2.11.1
+ARG MAVEN=https://repo1.maven.org/maven2
+
+USER root
+RUN set -eu; cd /opt/spark/jars; \
+    curl -fsSLO ${MAVEN}/org/apache/spark/spark-sql-kafka-0-10_${SCALA_VERSION}/${SPARK_VERSION}/spark-sql-kafka-0-10_${SCALA_VERSION}-${SPARK_VERSION}.jar; \
+    curl -fsSLO ${MAVEN}/org/apache/spark/spark-token-provider-kafka-0-10_${SCALA_VERSION}/${SPARK_VERSION}/spark-token-provider-kafka-0-10_${SCALA_VERSION}-${SPARK_VERSION}.jar; \
+    curl -fsSLO ${MAVEN}/org/apache/kafka/kafka-clients/${KAFKA_CLIENTS_VERSION}/kafka-clients-${KAFKA_CLIENTS_VERSION}.jar; \
+    curl -fsSLO ${MAVEN}/org/apache/commons/commons-pool2/${COMMONS_POOL_VERSION}/commons-pool2-${COMMONS_POOL_VERSION}.jar; \
+    curl -fsSLO ${MAVEN}/com/datastax/spark/spark-cassandra-connector-assembly_${SCALA_VERSION}/${CASSANDRA_CONNECTOR_VERSION}/spark-cassandra-connector-assembly_${SCALA_VERSION}-${CASSANDRA_CONNECTOR_VERSION}.jar
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /opt/airpulse
+COPY pyproject.toml readme.md ./
+COPY src ./src
+COPY configs ./configs
+COPY schemas ./schemas
+COPY deploy/images/spark/run_module.py ./run_module.py
+# the image ships its own spark, the python package only needs the client libraries. the
+# distribution pip is too old for a pyproject only package, so it is upgraded first.
+RUN sed -i '/"pyspark/d' pyproject.toml \
+    && pip3 install --upgrade pip setuptools wheel \
+    && pip3 install --no-deps . \
+    && pip3 install confluent-kafka requests pyyaml pydantic python-dotenv pandas pyarrow numpy
+
+# spark submit sets these itself, having them in the image lets a plain python3 import the jobs.
+ENV PYSPARK_PYTHON=python3 \
+    PYTHONPATH=/opt/spark/python:/opt/spark/python/lib/py4j-0.10.9.7-src.zip
+USER 185

@@ -1,0 +1,158 @@
+# hdfs with one namenode and a datanode statefulset, the apache hadoop image builds its xml
+# configuration from environment variables named after the file and the property.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hdfs-config
+data:
+  CORE-SITE.XML_fs.defaultFS: hdfs://hdfs-namenode:8020
+  CORE-SITE.XML_hadoop.tmp.dir: /hadoop/tmp
+  HDFS-SITE.XML_dfs.replication: "1"
+  HDFS-SITE.XML_dfs.namenode.name.dir: /hadoop/dfs/name
+  HDFS-SITE.XML_dfs.datanode.data.dir: /hadoop/dfs/data
+  HDFS-SITE.XML_dfs.namenode.rpc-bind-host: 0.0.0.0
+  HDFS-SITE.XML_dfs.namenode.http-bind-host: 0.0.0.0
+  HDFS-SITE.XML_dfs.namenode.datanode.registration.ip-hostname-check: "false"
+  HDFS-SITE.XML_dfs.client.use.datanode.hostname: "true"
+  HDFS-SITE.XML_dfs.datanode.use.datanode.hostname: "true"
+  HDFS-SITE.XML_dfs.permissions.enabled: "false"
+  HDFS-SITE.XML_dfs.blocksize: "67108864"
+  HDFS-SITE.XML_dfs.namenode.safemode.threshold-pct: "0.9"
+  HDFS-SITE.XML_dfs.namenode.heartbeat.recheck-interval: "15000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-namenode
+spec:
+  selector:
+    app: hdfs-namenode
+  ports:
+    - name: rpc
+      port: 8020
+    - name: http
+      port: 9870
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hdfs-namenode
+spec:
+  serviceName: hdfs-namenode
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hdfs-namenode
+  template:
+    metadata:
+      labels:
+        app: hdfs-namenode
+    spec:
+      containers:
+        - name: namenode
+          image: apache/hadoop:3.4.3
+          args: ["hdfs", "namenode"]
+          envFrom:
+            - configMapRef:
+                name: hdfs-config
+          env:
+            - name: ENSURE_NAMENODE_DIR
+              value: /hadoop/dfs/name
+            - name: HADOOP_HEAPSIZE_MAX
+              value: 768m
+          ports:
+            - containerPort: 8020
+            - containerPort: 9870
+          volumeMounts:
+            - name: name
+              mountPath: /hadoop/dfs/name
+          resources:
+            requests:
+              cpu: 200m
+              memory: 768Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9870
+            initialDelaySeconds: 20
+            periodSeconds: 10
+  volumeClaimTemplates:
+    - metadata:
+        name: name
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-datanode
+spec:
+  clusterIP: None
+  selector:
+    app: hdfs-datanode
+  ports:
+    - name: data
+      port: 9866
+    - name: http
+      port: 9864
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hdfs-datanode
+spec:
+  serviceName: hdfs-datanode
+  replicas: 1
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: hdfs-datanode
+  template:
+    metadata:
+      labels:
+        app: hdfs-datanode
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: hdfs-datanode
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: datanode
+          image: apache/hadoop:3.4.3
+          args: ["hdfs", "datanode"]
+          envFrom:
+            - configMapRef:
+                name: hdfs-config
+          env:
+            - name: HADOOP_HEAPSIZE_MAX
+              value: 512m
+          ports:
+            - containerPort: 9866
+            - containerPort: 9864
+          volumeMounts:
+            - name: data
+              mountPath: /hadoop/dfs/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              memory: 768Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 40Gi

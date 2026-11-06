@@ -1,0 +1,61 @@
+# the speed layer as one long running spark application managed by the spark operator.
+apiVersion: sparkoperator.k8s.io/v1beta2
+kind: SparkApplication
+metadata:
+  name: speed-layer
+spec:
+  type: Python
+  pythonVersion: "3"
+  mode: cluster
+  image: airpulse-spark:local
+  imagePullPolicy: IfNotPresent
+  mainApplicationFile: local:///opt/airpulse/run_module.py
+  arguments:
+    - airpulse.streaming.speed_layer
+    - --config
+    - /etc/airpulse/dev.yaml
+  sparkVersion: 3.5.9
+  restartPolicy:
+    type: Always
+    onFailureRetries: 10
+    onFailureRetryInterval: 30
+    onSubmissionFailureRetries: 10
+    onSubmissionFailureRetryInterval: 30
+  sparkConf:
+    spark.sql.session.timeZone: UTC
+    spark.streaming.stopGracefullyOnShutdown: "true"
+  driver:
+    cores: 1
+    memory: 1g
+    serviceAccount: spark-operator-spark
+    env:
+      - name: AIRPULSE_SPARK__USE_PACKAGES
+        value: "false"
+    envFrom:
+      - secretRef:
+          name: airpulse-secrets
+          optional: true
+    volumeMounts:
+      - name: configs
+        mountPath: /etc/airpulse
+      - name: locations
+        mountPath: /etc/airpulse/locations
+  executor:
+    instances: 1
+    cores: 1
+    memory: 1g
+    env:
+      - name: AIRPULSE_SPARK__USE_PACKAGES
+        value: "false"
+    volumeMounts:
+      - name: configs
+        mountPath: /etc/airpulse
+      - name: locations
+        mountPath: /etc/airpulse/locations
+  volumes:
+    - name: configs
+      configMap:
+        name: airpulse-configs
+    - name: locations
+      configMap:
+        name: airpulse-locations

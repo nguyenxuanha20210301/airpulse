@@ -1,0 +1,8 @@
+# strimzi operator, it only watches the airpulse namespace.
+watchNamespaces: []
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 384Mi

@@ -1,0 +1,30 @@
+# apply the keyspace and tables, the configmap is rendered by deploy.sh from schemas/cassandra.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cassandra-schema
+spec:
+  backoffLimit: 20
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: cqlsh
+          image: cassandra:4.1
+          command:
+            - sh
+            - -c
+            - |
+              until cqlsh cassandra -e "DESCRIBE KEYSPACES" >/dev/null 2>&1; do
+                echo "waiting for cassandra"; sleep 10
+              done
+              cqlsh cassandra -f /schema/keyspace.cql
+              cqlsh cassandra -f /schema/tables.cql
+              echo "schema applied"
+          volumeMounts:
+            - name: schema
+              mountPath: /schema
+      volumes:
+        - name: schema
+          configMap:
+            name: cassandra-schema

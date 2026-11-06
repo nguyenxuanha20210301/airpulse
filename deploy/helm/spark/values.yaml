@@ -1,0 +1,24 @@
+# kubeflow spark operator, applications are submitted in the airpulse namespace only. the chart
+# creates the spark-operator-spark service account that the applications reference.
+spark:
+  jobNamespaces:
+    - airpulse
+controller:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+webhook:
+  enable: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+prometheus:
+  metrics:
+    enable: true

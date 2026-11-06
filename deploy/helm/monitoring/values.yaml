@@ -1,0 +1,56 @@
+# kube prometheus stack trimmed for a laptop, grafana gets the trino datasource plugin and loads
+# the dashboards from configmaps labeled grafana_dashboard.
+alertmanager:
+  enabled: false
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+prometheus:
+  prometheusSpec:
+    retention: 3d
+    retentionSize: 4GB
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 5Gi
+grafana:
+  adminPassword: admin
+  plugins:
+    - trino-datasource
+  additionalDataSources:
+    - name: Trino
+      uid: trino
+      type: trino-datasource
+      access: proxy
+      url: http://trino:8080
+      jsonData:
+        enableImpersonation: false
+    - name: Prometheus
+      uid: prometheus
+      type: prometheus
+      access: proxy
+      url: http://monitoring-kube-prometheus-prometheus:9090
+      isDefault: true
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: airpulse
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi

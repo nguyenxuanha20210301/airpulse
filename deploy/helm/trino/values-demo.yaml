@@ -1,0 +1,8 @@
+server:
+  workers: 2
+catalogs:
+  cassandra: |
+    connector.name=cassandra
+    cassandra.contact-points=cassandra
+    cassandra.load-policy.dc-aware.local-dc=datacenter1
+    cassandra.consistency-level=LOCAL_QUORUM

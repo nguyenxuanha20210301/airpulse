@@ -1,0 +1,22 @@
+# demo profile, three brokers, three datanodes, three cassandra nodes, two executors, and every
+# job reads the demo config file.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: airpulse
+resources:
+  - ../../base
+patches:
+  - path: kafka-replicas.yaml
+  - path: hdfs-replicas.yaml
+  - path: cassandra-replicas.yaml
+  - path: producer-args.yaml
+    target:
+      kind: Deployment
+      name: producer
+  - path: spark-config.yaml
+    target:
+      kind: SparkApplication
+      name: speed-layer
+  - path: spark-batch-config.yaml
+    target:
+      kind: ScheduledSparkApplication

@@ -1,0 +1,3 @@
+- op: replace
+  path: /spec/template/spec/containers/0/args
+  value: ["python", "-m", "airpulse.ingestion.producer", "--config", "/etc/airpulse/dev.yaml"]

@@ -1,0 +1,11 @@
+# dev profile, one node of everything and the dev config file.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: airpulse
+resources:
+  - ../../base
+patches:
+  - path: profile-args.yaml
+    target:
+      kind: Deployment
+      name: producer

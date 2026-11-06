@@ -1,0 +1,36 @@
+# trino with a hive catalog on the metastore and a cassandra catalog on the ring, one worker on
+# dev. the demo values file adds a second worker for the scaling comparison.
+server:
+  workers: 1
+  config:
+    query:
+      maxMemory: 2GB
+coordinator:
+  jvm:
+    maxHeapSize: 1536M
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1536Mi
+    limits:
+      memory: 2Gi
+worker:
+  jvm:
+    maxHeapSize: 1536M
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1536Mi
+    limits:
+      memory: 2Gi
+catalogs:
+  hive: |
+    connector.name=hive
+    hive.metastore.uri=thrift://hive-metastore:9083
+    hive.non-managed-table-writes-enabled=true
+    hive.allow-drop-table=true
+  cassandra: |
+    connector.name=cassandra
+    cassandra.contact-points=cassandra
+    cassandra.load-policy.dc-aware.local-dc=datacenter1
+    cassandra.consistency-level=ONE

@@ -1,0 +1,89 @@
+# cassandra ring as a statefulset, the first pod is the seed. the overlay sets the node count,
+# the keyspace replication factor is applied by the schema job from schemas/cassandra.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra
+spec:
+  clusterIP: None
+  selector:
+    app: cassandra
+  ports:
+    - name: cql
+      port: 9042
+    - name: intra
+      port: 7000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+spec:
+  serviceName: cassandra
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      terminationGracePeriodSeconds: 120
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: cassandra
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: cassandra
+          image: cassandra:4.1
+          env:
+            - name: CASSANDRA_CLUSTER_NAME
+              value: airpulse
+            - name: CASSANDRA_SEEDS
+              value: cassandra-0.cassandra.airpulse.svc.cluster.local
+            - name: CASSANDRA_ENDPOINT_SNITCH
+              value: GossipingPropertyFileSnitch
+            - name: CASSANDRA_DC
+              value: datacenter1
+            - name: MAX_HEAP_SIZE
+              value: 1G
+            - name: HEAP_NEWSIZE
+              value: 256M
+            - name: CASSANDRA_NUM_TOKENS
+              value: "16"
+          ports:
+            - containerPort: 9042
+            - containerPort: 7000
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/cassandra
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1536Mi
+            limits:
+              memory: 2Gi
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "nodetool status | grep -q \"^UN\""]
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 10
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "nodetool drain"]
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi
