@@ -12,6 +12,6 @@ streaming:
   trigger_interval: 10 seconds
 
 replay:
-  speed_factor: 100
+  speed_factor: 3600
   start_date: 2020-01-01
-  end_date: 2020-12-31
+  end_date: 2020-01-31

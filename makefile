@@ -7,11 +7,18 @@ UV := $(shell command -v uv 2>/dev/null)
 PROFILE ?= dev
 SCRIPTS := deploy/scripts
 
+# spark 3.5 needs java 17, the first matching jdk is used unless JAVA_HOME is already set.
+JAVA_HOME ?= $(firstword $(wildcard /usr/lib/jvm/java-17-openjdk-* /usr/lib/jvm/temurin-17* /usr/lib/jvm/*17*))
+export JAVA_HOME
+# spark workers must run the same python as the driver, which is the one in the virtualenv.
+export PYSPARK_PYTHON ?= $(CURDIR)/$(BIN)/python
+export PYSPARK_DRIVER_PYTHON ?= $(CURDIR)/$(BIN)/python
+
 # tool caches stay inside the repo so nothing is written outside it.
 export UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export PIP_CACHE_DIR ?= $(CURDIR)/.cache/pip
 
-.PHONY: help setup lint format test check clean cluster-up cluster-down deploy port-forward demo
+.PHONY: help setup lint format test check schemas clean cluster-up cluster-down deploy port-forward demo
 
 help:
 	@echo "setup         create the virtualenv and install the package with dev tools"
@@ -19,6 +26,7 @@ help:
 	@echo "lint          run ruff checks without changing files"
 	@echo "test          run unit tests"
 	@echo "check         format check, lint and unit tests, run before every commit"
+	@echo "schemas       export the json schema files under schemas/events"
 	@echo "clean         remove caches and build output, keeps the virtualenv"
 	@echo "cluster-up    create the local kubernetes cluster, PROFILE=dev by default"
 	@echo "cluster-down  delete the local kubernetes cluster"
@@ -48,6 +56,9 @@ test:
 	$(BIN)/pytest
 
 check: lint test
+
+schemas:
+	$(BIN)/python -m airpulse.common.schemas
 
 clean:
 	rm -rf build dist .pytest_cache .ruff_cache .coverage htmlcov

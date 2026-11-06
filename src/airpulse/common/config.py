@@ -64,10 +64,20 @@ class KeyedSourceConfig(StrictModel):
     api_key: str = ""
 
 
+class OpenAqConfig(KeyedSourceConfig):
+    # stations within radius_m of a sampling point are attached to it, nearest first.
+    radius_m: int = Field(default=25000, ge=100)
+    max_stations: int = Field(default=3, ge=1)
+
+
+class OpenWeatherMapConfig(KeyedSourceConfig):
+    calls_per_minute: int = Field(default=50, ge=1)
+
+
 class SourcesConfig(StrictModel):
     open_meteo: OpenMeteoConfig
-    openaq: KeyedSourceConfig
-    openweathermap: KeyedSourceConfig
+    openaq: OpenAqConfig
+    openweathermap: OpenWeatherMapConfig
 
 
 class IngestionConfig(StrictModel):
@@ -104,7 +114,9 @@ class HdfsConfig(StrictModel):
 
 class CassandraTables(StrictModel):
     air_latest: str
+    weather_latest: str
     air_windows: str
+    weather_windows: str
     alerts: str
     forecast: str
 
@@ -138,6 +150,8 @@ class SparkConfig(StrictModel):
     executor_memory: str
     executor_cores: int = Field(ge=1)
     shuffle_partitions: int = Field(ge=1)
+    use_packages: bool = True
+    packages: StrList = []
 
 
 class StreamingConfig(StrictModel):
@@ -154,6 +168,13 @@ class AqiConfig(StrictModel):
     pm2_5_daily_limit_qcvn: float
 
 
+class MlConfig(StrictModel):
+    max_iter: int = Field(ge=1)
+    max_depth: int = Field(ge=1)
+    test_days: int = Field(ge=1)
+    min_rows: int = Field(ge=1)
+
+
 class AlertsConfig(StrictModel):
     aqi_level: int
     temperature_hot_c: float
@@ -162,6 +183,8 @@ class AlertsConfig(StrictModel):
 
 class ReplayConfig(StrictModel):
     speed_factor: float = Field(gt=0)
+    pacing: bool = True
+    shift_to_now: bool = False
     topic_suffix: str
     start_date: date | None = None
     end_date: date | None = None
@@ -172,6 +195,7 @@ class Config(StrictModel):
     profile: str
     schema_version: int
     timezone: str
+    log_level: str = "INFO"
     config_dir: Path
     locations: LocationsConfig
     sources: SourcesConfig
@@ -183,6 +207,7 @@ class Config(StrictModel):
     spark: SparkConfig
     streaming: StreamingConfig
     aqi: AqiConfig
+    ml: MlConfig
     alerts: AlertsConfig
     replay: ReplayConfig
 

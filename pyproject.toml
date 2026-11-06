@@ -7,7 +7,7 @@ name = "airpulse"
 version = "0.1.0"
 description = "real time analysis and forecasting of weather and air quality trends on a lambda architecture"
 readme = "readme.md"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "pyspark>=3.5.3,<4",
     "confluent-kafka>=2.3",
@@ -35,12 +35,14 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 src = ["src", "tests"]
 extend-exclude = ["notebooks"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "N", "SIM"]
+# F and T are the usual aliases for pyspark functions and types.
+ignore = ["N812"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["airpulse"]

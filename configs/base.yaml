@@ -6,6 +6,7 @@
 project: airpulse
 schema_version: 1
 timezone: Asia/Ho_Chi_Minh
+log_level: INFO
 
 locations:
   # sampling points are the centers of the 63 former provinces. the province column holds the
@@ -50,10 +51,14 @@ sources:
     timeout_s: 30
     # set through AIRPULSE_SOURCES__OPENAQ__API_KEY in .env, never in this file.
     api_key: ""
+    radius_m: 25000
+    max_stations: 3
   openweathermap:
     base_url: https://api.openweathermap.org/data/2.5
     timeout_s: 30
     api_key: ""
+    # the free plan allows 60 calls per minute, keep a margin.
+    calls_per_minute: 50
 
 ingestion:
   enabled_sources:
@@ -90,7 +95,9 @@ cassandra:
   consistency: ONE
   tables:
     air_latest: rt_air_latest
+    weather_latest: rt_weather_latest
     air_windows: rt_air_windows
+    weather_windows: rt_weather_windows
     alerts: rt_alerts
     forecast: rt_forecast
 
@@ -108,6 +115,12 @@ spark:
   executor_memory: 1g
   executor_cores: 1
   shuffle_partitions: 8
+  # connector jars resolved from maven for laptop runs, the cluster image has them baked in and
+  # sets use_packages to false. the kafka coordinate must match the installed spark version.
+  use_packages: true
+  packages:
+    - org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.9
+    - com.datastax.spark:spark-cassandra-connector_2.12:3.5.1
 
 streaming:
   trigger_interval: 1 minute
@@ -116,7 +129,7 @@ streaming:
     - 1 hour
     - 3 hours
     - 24 hours
-  slide: 10 minutes
+  slide: 1 hour
   # relative to hdfs root.
   checkpoint_dir: checkpoints
 
@@ -125,13 +138,26 @@ aqi:
   pm2_5_daily_limit_who: 15
   pm2_5_daily_limit_qcvn: 50
 
+ml:
+  # gradient boosted trees stay small, the course is about the system, not the model.
+  max_iter: 50
+  max_depth: 5
+  # the last days of the training range are held out to report honest errors.
+  test_days: 30
+  min_rows: 1000
+
 alerts:
   aqi_level: 150
   temperature_hot_c: 39
   temperature_cold_c: 13
 
 replay:
+  # data hours per wall clock hour, 3600 plays one hour of history every second.
   speed_factor: 1
+  # with pacing off the replay publishes as fast as kafka accepts, used for throughput tests.
+  pacing: true
+  # shift timestamps so the first replayed hour lands on the current hour, keeps dashboards live.
+  shift_to_now: false
   topic_suffix: replay
   start_date: null
   end_date: null
