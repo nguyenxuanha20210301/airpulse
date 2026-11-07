@@ -40,11 +40,15 @@ def test_monthly_counts_exceedance_days(config, clean_frames) -> None:
 
 def test_heatmap_and_seasons(config, clean_frames) -> None:
     weather, air = clean_frames
-    heat = heatmap_month_hour(air)
+    heat = heatmap_month_hour(air, config.timezone)
     seasons = seasonal(air_daily(air, config.aqi), weather_daily(weather)).collect()
+    six_utc = heat.where("location_id = 'ha_noi' and hour_utc = 6").first()
 
     assert heat.count() == 2 * 24
-    assert heat.where("location_id = 'ha_noi' and hour_utc = 6").first()["n_hours"] == 5
+    assert six_utc["n_hours"] == 5
+    # vietnam is seven hours ahead of UTC all year.
+    assert six_utc["hour_local"] == 13
+    assert six_utc["month"] == 11
     assert {row["season"] for row in seasons} == {"autumn"}
     mapping = {m: s for m, s in [(1, "winter"), (4, "spring"), (7, "summer"), (10, "autumn")]}
     frame = air.sparkSession.createDataFrame([(m,) for m in mapping], ["month"])

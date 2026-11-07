@@ -6,15 +6,15 @@ import argparse
 import sys
 from collections.abc import Sequence
 
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 from airpulse.batch.common_io import add_io_args, read_layer, write_layer
-from airpulse.common.config import Config, load_config, load_locations
+from airpulse.common.config import load_config
 from airpulse.common.features import join_weather_air
 from airpulse.common.logging import get_logger, new_run_id
 from airpulse.common.schemas import DS_AIR_HOURLY, DS_WEATHER_HOURLY, LAYER_CLEAN, LAYER_CURATED
-from airpulse.common.spark import build_spark_session
+from airpulse.common.spark import build_spark_session, locations_frame
 
 WEATHER_VARIABLES = [
     "wind_speed_kmh",
@@ -24,11 +24,6 @@ WEATHER_VARIABLES = [
     "pressure_msl_hpa",
     "cloud_cover_pct",
 ]
-
-
-def locations_frame(spark: SparkSession, cfg: Config) -> DataFrame:
-    rows = [(loc.location_id, loc.region, loc.province) for loc in load_locations(cfg)]
-    return spark.createDataFrame(rows, ["location_id", "region", "province"])
 
 
 def _correlate(df: DataFrame, group: list, scope: str, target: str = "pm2_5_ugm3") -> DataFrame:
@@ -52,7 +47,8 @@ def _correlate(df: DataFrame, group: list, scope: str, target: str = "pm2_5_ugm3
 
 
 def correlation_table(joined: DataFrame, locations: DataFrame) -> DataFrame:
-    with_region = joined.join(locations, "location_id", "left").withColumn(
+    regions = locations.select("location_id", "region", "province")
+    with_region = joined.join(regions, "location_id", "left").withColumn(
         "month", F.month("event_ts_utc")
     )
     return (

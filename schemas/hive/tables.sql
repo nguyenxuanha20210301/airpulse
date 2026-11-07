@@ -20,3 +20,4 @@ CREATE TABLE IF NOT EXISTS airpulse.curated_yearly_trend USING parquet LOCATION 
 CREATE TABLE IF NOT EXISTS airpulse.curated_correlations USING parquet LOCATION '${root}/curated/correlations';
 CREATE TABLE IF NOT EXISTS airpulse.curated_forecast_evaluation USING parquet LOCATION '${root}/curated/forecast_evaluation';
 CREATE TABLE IF NOT EXISTS airpulse.curated_mapreduce_monthly_pm2_5 USING parquet LOCATION '${root}/curated/mapreduce_monthly_pm2_5';
+CREATE TABLE IF NOT EXISTS airpulse.ref_locations USING parquet LOCATION '${root}/reference/locations';

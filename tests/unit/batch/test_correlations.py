@@ -1,5 +1,6 @@
-from airpulse.batch.correlations import WEATHER_VARIABLES, correlation_table, locations_frame
+from airpulse.batch.correlations import WEATHER_VARIABLES, correlation_table
 from airpulse.common.features import join_weather_air
+from airpulse.common.spark import locations_frame
 
 
 def test_correlation_scopes_and_values(spark, config, clean_frames) -> None:

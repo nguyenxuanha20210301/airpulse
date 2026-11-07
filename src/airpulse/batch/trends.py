@@ -112,11 +112,17 @@ def weather_monthly(daily: DataFrame) -> DataFrame:
     )
 
 
-def heatmap_month_hour(clean_air: DataFrame) -> DataFrame:
-    """average pm2_5 per location, month and hour of day across every year, the seasonality view."""
+def heatmap_month_hour(clean_air: DataFrame, timezone: str) -> DataFrame:
+    """average pm2_5 per location, month and hour of day across every year, the seasonality view.
+
+    month and hour follow the local clock, since traffic peaks and night inversions do, and the
+    UTC hour is kept next to the local one.
+    """
+    local_ts = F.from_utc_timestamp("event_ts_utc", timezone)
     return clean_air.groupBy(
         "location_id",
-        F.month("event_ts_utc").alias("month"),
+        F.month(local_ts).alias("month"),
+        F.hour(local_ts).alias("hour_local"),
         F.hour("event_ts_utc").alias("hour_utc"),
     ).agg(F.avg("pm2_5_ugm3").alias("avg_pm2_5"), F.count("pm2_5_ugm3").alias("n_hours"))
 
@@ -175,7 +181,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "weather_daily": w_daily,
         "air_monthly": air_monthly(a_daily),
         "weather_monthly": weather_monthly(w_daily),
-        "heatmap_month_hour": heatmap_month_hour(air),
+        "heatmap_month_hour": heatmap_month_hour(air, cfg.timezone),
         "seasonal": seasonal(a_daily, w_daily),
         "yearly_trend": yearly_trend(a_daily, w_daily),
     }

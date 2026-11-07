@@ -25,8 +25,11 @@ LAYER_RAW = "raw"
 LAYER_CLEAN = "clean"
 LAYER_CURATED = "curated"
 LAYER_MODELS = "models"
+# small static tables copied from the config, so the query layer can join names and regions.
+LAYER_REFERENCE = "reference"
 DS_WEATHER_HOURLY = "weather_hourly"
 DS_AIR_HOURLY = "air_hourly"
+DS_LOCATIONS = "locations"
 
 
 class EventBase(BaseModel):
@@ -123,6 +126,26 @@ def make_event_id(source: str, location_id: str, event_ts_utc: datetime, domain:
     """stable id for one source, place, hour and domain, so retries and replays deduplicate."""
     key = "|".join([source, location_id, event_ts_utc.isoformat(), domain])
     return hashlib.sha1(key.encode("utf-8")).hexdigest()[:32]
+
+
+def location_key(location_id: str, station_id: str | None = None) -> str:
+    """the place part of an event id, stations near the same point keep separate ids."""
+    return f"{location_id}/{station_id}" if station_id else location_id
+
+
+def event_id_column(domain: str):
+    """make_event_id as a spark column, for jobs that move whole datasets in time.
+
+    the timestamp is rendered like datetime.isoformat on a UTC value, which holds because every
+    session runs in UTC.
+    """
+    from pyspark.sql import functions as F
+
+    key = F.when(
+        F.col("station_id").isNotNull(), F.concat_ws("/", "location_id", "station_id")
+    ).otherwise(F.col("location_id"))
+    stamp = F.date_format("event_ts_utc", "yyyy-MM-dd'T'HH:mm:ssxxx")
+    return F.substring(F.sha1(F.concat_ws("|", F.col("source"), key, stamp, F.lit(domain))), 1, 32)
 
 
 def _unwrap(annotation: object) -> tuple[type, bool]:

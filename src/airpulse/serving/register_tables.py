@@ -1,7 +1,8 @@
 """register the hdfs datasets as external tables in the hive metastore.
 
 the ddl lives in schemas/hive/tables.sql with a root placeholder, this job fills it from the
-profile, runs each statement and recovers the day partitions so trino sees new days.
+profile, runs each statement and recovers the day partitions so trino sees new days. the list of
+sampling points is copied to the reference layer first, so dashboards can show names and regions.
 """
 
 from __future__ import annotations
@@ -17,7 +18,8 @@ from pyspark.sql import SparkSession
 
 from airpulse.common.config import REPO_ROOT, Config, load_config
 from airpulse.common.logging import get_logger, new_run_id
-from airpulse.common.spark import build_spark_session
+from airpulse.common.schemas import DS_LOCATIONS, LAYER_REFERENCE
+from airpulse.common.spark import build_spark_session, locations_frame
 
 
 def ddl_path(cfg: Config) -> Path:
@@ -47,9 +49,32 @@ def table_names(ddl: list[str]) -> list[str]:
     return found
 
 
+def with_drops(ddl: list[str]) -> list[str]:
+    """put a drop in front of every create table, so the metastore follows the parquet schema.
+
+    every table is external, dropping one forgets the metadata and keeps the files, and a create
+    if not exists alone would keep the columns of the first run after a job adds one.
+    """
+    planned = []
+    for statement in ddl:
+        planned.extend(f"DROP TABLE IF EXISTS {name}" for name in table_names([statement]))
+        planned.append(statement)
+    return planned
+
+
+def write_reference(spark: SparkSession, cfg: Config, root: str | None = None) -> str:
+    """copy the sampling points of the config to the reference layer as one small parquet file."""
+    if root:
+        path = f"{root.rstrip('/')}/{LAYER_REFERENCE}/{DS_LOCATIONS}"
+    else:
+        path = cfg.hdfs.dataset_path(LAYER_REFERENCE, DS_LOCATIONS)
+    locations_frame(spark, cfg).coalesce(1).write.mode("overwrite").parquet(path)
+    return path
+
+
 def register(spark: SparkSession, cfg: Config, ddl_text: str, log) -> list[str]:
     root = f"{cfg.hdfs.url}{cfg.hdfs.root}"
-    ddl = statements(ddl_text, root)
+    ddl = with_drops(statements(ddl_text, root))
     registered = []
     for statement in ddl:
         try:
@@ -78,6 +103,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_id = new_run_id()
     log = get_logger("serving.register_tables", run_id, cfg.log_level)
     spark = build_spark_session(cfg, "register-tables")
+    log.info("wrote the sampling points to %s", write_reference(spark, cfg))
     names = register(spark, cfg, ddl_path(cfg).read_text(encoding="utf-8"), log)
     log.info("registered %d tables, %s", len(names), names)
     spark.stop()
