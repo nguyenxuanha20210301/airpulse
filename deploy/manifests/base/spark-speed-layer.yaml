@@ -43,9 +43,11 @@ spec:
   executor:
     instances: 1
     cores: 1
-    # the forecast step holds three gbt models next to the cassandra reads, 1g was oom killed.
+    # the forecast step holds six gbt models next to the cassandra reads, 1g was oom killed. the
+    # thirteen queries keep kafka and cassandra connections outside the heap, with 512m of
+    # overhead both executors were killed for memory once the models were loaded.
     memory: 2g
-    memoryOverhead: 512m
+    memoryOverhead: 1g
     env:
       - name: AIRPULSE_SPARK__USE_PACKAGES
         value: "false"

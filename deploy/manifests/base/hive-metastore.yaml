@@ -52,6 +52,15 @@ spec:
       containers:
         - name: metastore
           image: apache/hive:3.1.3
+          # the image initializes the schema on every start and fails once it exists, which kept
+          # the metastore down after its node had been stopped, a database already on the volume
+          # skips the initialization.
+          command:
+            - /bin/bash
+            - -c
+            - |
+              if [ -d /opt/hive/data/metastore_db ]; then export IS_RESUME=true; fi
+              exec /entrypoint.sh
           env:
             - name: SERVICE_NAME
               value: metastore
