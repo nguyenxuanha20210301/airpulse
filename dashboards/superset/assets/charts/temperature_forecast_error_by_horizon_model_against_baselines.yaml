@@ -1,0 +1,59 @@
+slice_name: temperature forecast error by horizon, model against baselines
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_bar
+  x_axis: horizon
+  metrics:
+  - mae
+  groupby:
+  - model_name
+  adhoc_filters:
+  - clause: WHERE
+    comparator: temperature
+    expressionType: SIMPLE
+    operator: ==
+    subject: target
+    isExtra: false
+    filterOptionName: filter_target_temperature
+  row_limit: 1000
+  order_desc: true
+  orientation: vertical
+  show_legend: true
+  y_axis_format: .1f
+  y_axis_title: "MAE \xB0C"
+  x_axis_title: forecast horizon
+  x_axis_sort_asc: true
+  x_axis_sort_series: name
+  x_axis_sort_series_ascending: true
+  datasource: 4__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: c9bb08e0-ef6b-4c07-aa8e-f48b0e86fdcf
+version: 1.0.0
+dataset_uuid: b051ab42-aaeb-4587-919f-86c3b28dd044

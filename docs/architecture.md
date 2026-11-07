@@ -27,7 +27,7 @@ the dashboards.
 3. The batch layer runs nightly as scheduled Spark applications.
    - `raw_to_clean` rebuilds the clean layer exactly, the last ingested copy of each event wins.
    - `trends` produces daily, monthly, seasonal and yearly tables, the month by hour heatmap
-     and the count of days above the WHO and QCVN limits.
+     in local time and the count of days above the WHO and QCVN limits.
    - `correlations` computes Pearson correlations between PM2.5 and the weather per location,
      region and month.
    - `monthly_average` is the same monthly mean written in the MapReduce pattern, a mapper that
@@ -37,12 +37,19 @@ the dashboards.
    - `train` fits one gradient boosted tree per target and horizon, evaluates it against the
      persistence, moving average and same hour yesterday baselines on a held out month, and
      stores the model in a versioned registry on HDFS.
-   - `register_tables` registers every dataset in the Hive metastore so Trino can read it.
+   - `register_tables` copies the list of points with their name, province and region from
+     the config to `reference/locations`, then registers every dataset in the Hive metastore
+     so Trino can read it. The external tables are dropped and created again on each run, the
+     files stay, so a column added by a job reaches Trino without manual steps.
 4. Trino serves one SQL surface over the Hive catalog (HDFS) and the Cassandra catalog. The
    views in `schemas/trino/views.sql` join the realtime view with the batch view, for example
-   the current value next to the long term monthly mean of the same place.
+   the current value next to the long term monthly mean of the same place, and put the name,
+   province and region of each point next to the curated tables for the dashboards.
 5. Grafana shows the realtime dashboard through the Trino datasource and the cluster dashboard
-   through Prometheus. Superset is used for the analytical dashboards on the curated tables.
+   through Prometheus. Superset holds the analytical dashboard on the Trino views, with tabs
+   for pollution levels, seasons and weather, forecast errors and the live value against
+   history, and filters by region, province and period. Its definition lives in
+   `dashboards/superset/assets` and is loaded by `deploy/scripts/import_dashboards.sh`.
 
 ## Why these components
 

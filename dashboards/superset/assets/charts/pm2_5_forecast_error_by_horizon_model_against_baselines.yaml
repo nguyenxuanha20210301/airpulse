@@ -1,0 +1,59 @@
+slice_name: PM2.5 forecast error by horizon, model against baselines
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_bar
+  x_axis: horizon
+  metrics:
+  - mae
+  groupby:
+  - model_name
+  adhoc_filters:
+  - clause: WHERE
+    comparator: pm2_5
+    expressionType: SIMPLE
+    operator: ==
+    subject: target
+    isExtra: false
+    filterOptionName: filter_target_pm2_5
+  row_limit: 1000
+  order_desc: true
+  orientation: vertical
+  show_legend: true
+  y_axis_format: .1f
+  y_axis_title: "MAE \xB5g/m\xB3"
+  x_axis_title: forecast horizon
+  x_axis_sort_asc: true
+  x_axis_sort_series: name
+  x_axis_sort_series_ascending: true
+  datasource: 4__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 5902f176-6150-4110-acdf-b1ee830237e1
+version: 1.0.0
+dataset_uuid: b051ab42-aaeb-4587-919f-86c3b28dd044

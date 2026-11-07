@@ -1,0 +1,43 @@
+slice_name: distribution of daily PM2.5 by region
+description: null
+certified_by: null
+certification_details: null
+viz_type: box_plot
+params:
+  viz_type: box_plot
+  groupby:
+  - region
+  columns:
+  - location_id
+  - day
+  metrics:
+  - mean_pm2_5
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: day
+  whiskerOptions: Tukey
+  number_format: .0f
+  date_format: smart_date
+  x_ticks_layout: auto
+  color_scheme: supersetColors
+  row_limit: 100000
+  temporal_columns_lookup:
+    day: true
+  time_grain_sqla: P1D
+  y_axis_title: "daily mean PM2.5 \xB5g/m\xB3"
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  x_axis_title_margin: 15
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 1__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: d87a14d0-5760-41fb-af10-5b47a316dc66
+version: 1.0.0
+dataset_uuid: 2b7ba80b-2c5c-4550-9f1f-0349c8a502e1

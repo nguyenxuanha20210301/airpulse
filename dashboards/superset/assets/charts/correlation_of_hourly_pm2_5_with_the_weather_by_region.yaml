@@ -1,0 +1,59 @@
+slice_name: correlation of hourly PM2.5 with the weather by region
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_bar
+  x_axis: weather_variable
+  metrics:
+  - mean_correlation
+  groupby:
+  - region
+  adhoc_filters:
+  - clause: WHERE
+    comparator: location
+    expressionType: SIMPLE
+    operator: ==
+    subject: scope
+    isExtra: false
+    filterOptionName: filter_scope_location
+  row_limit: 1000
+  order_desc: true
+  orientation: horizontal
+  show_legend: true
+  y_axis_format: .2f
+  y_axis_title: mean Pearson correlation over the points of the region
+  x_axis_title: ''
+  x_axis_sort_asc: true
+  x_axis_sort_series: name
+  x_axis_sort_series_ascending: true
+  datasource: 3__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: f8ccbb2c-9bf2-4571-8695-5f357fcca115
+version: 1.0.0
+dataset_uuid: a547897d-0d8f-42cb-ac44-0ca88d907173

@@ -1,0 +1,57 @@
+slice_name: days above the QCVN and WHO daily limits, twenty worst points
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_bar
+  x_axis: name
+  metrics:
+  - days_above_qcvn
+  - days_above_who
+  groupby: []
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: day
+  row_limit: 20
+  order_desc: true
+  orientation: horizontal
+  x_axis_sort: days_above_qcvn
+  x_axis_sort_asc: true
+  show_value: true
+  show_legend: true
+  y_axis_format: .0f
+  y_axis_title: days
+  x_axis_title: ''
+  datasource: 1__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 9e160c6d-e4ff-4f75-9d13-14d86d1d99dc
+version: 1.0.0
+dataset_uuid: 2b7ba80b-2c5c-4550-9f1f-0349c8a502e1

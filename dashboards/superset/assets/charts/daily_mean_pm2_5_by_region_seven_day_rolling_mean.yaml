@@ -1,0 +1,61 @@
+slice_name: daily mean PM2.5 by region, seven day rolling mean
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_line
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_line
+  x_axis: day
+  time_grain_sqla: P1D
+  metrics:
+  - mean_pm2_5
+  groupby:
+  - region
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: day
+  row_limit: 10000
+  order_desc: true
+  rolling_type: mean
+  rolling_periods: 7
+  min_periods: 1
+  markerEnabled: false
+  show_legend: true
+  zoomable: true
+  y_axis_format: .0f
+  y_axis_title: "PM2.5 \xB5g/m\xB3"
+  x_axis_sort_asc: true
+  x_axis_sort_series: name
+  x_axis_sort_series_ascending: true
+  datasource: 1__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 63904b5a-d13d-42b6-bc0b-2e6e33eb4439
+version: 1.0.0
+dataset_uuid: 2b7ba80b-2c5c-4550-9f1f-0349c8a502e1

@@ -1,0 +1,51 @@
+slice_name: latest AQI, ten worst points
+description: null
+certified_by: null
+certification_details: null
+viz_type: echarts_timeseries_bar
+params:
+  annotation_layers: []
+  color_scheme: supersetColors
+  comparison_type: values
+  extra_form_data: {}
+  legendOrientation: top
+  legendType: plain
+  only_total: true
+  rich_tooltip: true
+  show_empty_columns: true
+  sort_series_type: name
+  sort_series_ascending: true
+  tooltipTimeFormat: smart_date
+  truncateXAxis: true
+  truncate_metric: true
+  x_axis_time_format: smart_date
+  x_axis_title_margin: 30
+  y_axis_bounds:
+  - null
+  - null
+  y_axis_title_margin: 40
+  y_axis_title_position: Left
+  viz_type: echarts_timeseries_bar
+  x_axis: name
+  metrics:
+  - latest_aqi
+  groupby: []
+  adhoc_filters: []
+  row_limit: 10
+  order_desc: true
+  orientation: horizontal
+  x_axis_sort: latest_aqi
+  x_axis_sort_asc: true
+  show_value: true
+  show_legend: false
+  y_axis_format: .0f
+  y_axis_title: US EPA AQI
+  x_axis_title: ''
+  datasource: 5__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 669dd04e-1a6a-474a-82cd-1ac3c4a971a7
+version: 1.0.0
+dataset_uuid: 94ce54da-4511-40c3-9ba8-716d0022f052

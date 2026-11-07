@@ -1,0 +1,41 @@
+slice_name: latest PM2.5 per point against the long term mean of the same month
+description: null
+certified_by: null
+certification_details: null
+viz_type: table
+params:
+  viz_type: table
+  query_mode: raw
+  all_columns:
+  - name
+  - province
+  - pm2_5_ugm3
+  - monthly_mean_pm2_5
+  - pm2_5_above_mean
+  - aqi_computed
+  - aqi_category
+  - event_ts_utc
+  order_by_cols:
+  - '["pm2_5_above_mean", false]'
+  adhoc_filters: []
+  groupby: []
+  percent_metrics: []
+  row_limit: 100
+  server_page_length: 10
+  server_pagination: false
+  include_search: true
+  show_cell_bars: false
+  color_pn: true
+  allow_render_html: false
+  table_timestamp_format: '%Y-%m-%d %H:%M'
+  order_desc: true
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 5__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 00bdc345-63cc-43b3-85df-ddf8b7df1f8c
+version: 1.0.0
+dataset_uuid: 94ce54da-4511-40c3-9ba8-716d0022f052

@@ -1,0 +1,34 @@
+slice_name: holdout errors of every model
+description: null
+certified_by: null
+certification_details: null
+viz_type: pivot_table_v2
+params:
+  viz_type: pivot_table_v2
+  groupbyRows:
+  - target
+  - horizon
+  groupbyColumns:
+  - model_name
+  metrics:
+  - mae
+  - rmse
+  metricsLayout: ROWS
+  aggregateFunction: Average
+  adhoc_filters: []
+  row_limit: 10000
+  order_desc: true
+  rowOrder: key_a_to_z
+  colOrder: key_a_to_z
+  valueFormat: .2f
+  date_format: smart_date
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 4__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 81a13649-21e0-45f2-a2b6-2ca56aa0eb48
+version: 1.0.0
+dataset_uuid: b051ab42-aaeb-4587-919f-86c3b28dd044

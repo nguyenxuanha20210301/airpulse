@@ -1,0 +1,18 @@
+database_name: airpulse trino
+sqlalchemy_uri: trino://admin@trino:8080/hive
+cache_timeout: null
+expose_in_sqllab: true
+allow_run_async: false
+allow_ctas: false
+allow_cvas: false
+allow_dml: false
+allow_file_upload: false
+extra:
+  metadata_params: {}
+  engine_params: {}
+  metadata_cache_timeout: {}
+  schemas_allowed_for_file_upload: []
+impersonate_user: false
+configuration_method: sqlalchemy_form
+uuid: cd438f2b-4dab-42bc-a66f-ef17394122df
+version: 1.0.0

@@ -1,0 +1,29 @@
+slice_name: days above the WHO guideline
+description: null
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  viz_type: big_number_total
+  metric: share_above_who
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: day
+  header_font_size: 0.4
+  subtitle: share of point days, daily mean PM2.5
+  subtitle_font_size: 0.15
+  y_axis_format: .0%
+  time_format: smart_date
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 1__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 1c04dfaf-7cee-46ce-984c-6c36520314ce
+version: 1.0.0
+dataset_uuid: 2b7ba80b-2c5c-4550-9f1f-0349c8a502e1

@@ -1,0 +1,29 @@
+slice_name: points monitored
+description: null
+certified_by: null
+certification_details: null
+viz_type: big_number_total
+params:
+  viz_type: big_number_total
+  metric: points
+  adhoc_filters:
+  - clause: WHERE
+    comparator: No filter
+    expressionType: SIMPLE
+    operator: TEMPORAL_RANGE
+    subject: day
+  header_font_size: 0.4
+  subtitle: sampling points, one per former province
+  subtitle_font_size: 0.15
+  y_axis_format: ',d'
+  time_format: smart_date
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 1__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: 358fe8d0-42a8-43f4-a837-14bf2156ad66
+version: 1.0.0
+dataset_uuid: 2b7ba80b-2c5c-4550-9f1f-0349c8a502e1

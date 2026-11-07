@@ -1,0 +1,39 @@
+slice_name: mean PM2.5 by month and local hour of day
+description: null
+certified_by: null
+certification_details: null
+viz_type: heatmap_v2
+params:
+  viz_type: heatmap_v2
+  x_axis: hour_label
+  groupby: month_label
+  metric: weighted_pm2_5
+  adhoc_filters: []
+  row_limit: 10000
+  normalize_across: heatmap
+  linear_color_scheme: schemeOranges
+  legend_type: continuous
+  show_legend: true
+  show_values: false
+  show_percentage: false
+  sort_x_axis: alpha_asc
+  sort_y_axis: alpha_desc
+  xscale_interval: -1
+  yscale_interval: -1
+  left_margin: 50
+  bottom_margin: auto
+  value_bounds:
+  - null
+  - null
+  y_axis_format: .0f
+  x_axis_time_format: smart_date
+  annotation_layers: []
+  extra_form_data: {}
+  datasource: 2__table
+  dashboards:
+  - 2
+query_context: null
+cache_timeout: null
+uuid: ae064955-ae35-499b-893e-a9f6ad428399
+version: 1.0.0
+dataset_uuid: 822198df-b6c1-4d15-86be-13c9d0fce1bc

@@ -38,6 +38,20 @@ make deploy PROFILE=dev          # builds the images, installs everything, appli
 make port-forward PROFILE=dev    # grafana on 3000, trino on 8080, hdfs on 9870, superset on 8088
 ```
 
+To try the demo profile without losing the dev cluster, stop the dev nodes and create the demo
+cluster under another name, the variable goes to every make target of that cluster.
+
+```bash
+docker stop airpulse-control-plane airpulse-worker
+CLUSTER_NAME=airpulse-demo make cluster-up PROFILE=demo
+CLUSTER_NAME=airpulse-demo make deploy PROFILE=demo
+CLUSTER_NAME=airpulse-demo make demo PROFILE=demo
+```
+
+`docker start` on the two dev nodes and `kubectl config use-context kind-airpulse` bring the dev
+cluster back later. On the demo profile the producer restarts a few times right after the
+deployment, until the third broker has joined and topics with three replicas can be created.
+
 `deploy.sh` is idempotent. It creates the configmaps from `configs/`, the secret from `.env`,
 installs the Strimzi and Spark operators with Helm, applies the kustomize overlay of the
 profile, waits for Kafka, HDFS and Cassandra, applies the Cassandra schema with a job and
@@ -50,6 +64,11 @@ The producer starts with the deployment and publishes every 30 minutes. History 
 the one off backfill application, edit the dates in `deploy/manifests/base/spark-oneoff.yaml`
 and apply it, or run `make demo` which backfills two months, runs every batch job once and
 starts a replay. The scheduled batch applications run nightly after that.
+
+The Superset dashboard is loaded from `dashboards/superset/assets` by
+`deploy/scripts/import_dashboards.sh`, which `make demo` calls once the Trino views exist. After
+changing charts in the Superset UI, `deploy/scripts/export_dashboards.sh` writes them back to
+the repo. Grafana dashboards are provisioned from `dashboards/grafana` by `make deploy`.
 
 For a laptop run without the cluster, every job accepts `--input` and `--output` to work on
 local directories, for example
