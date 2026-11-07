@@ -85,24 +85,22 @@ def add_rolling_features(df: DataFrame) -> DataFrame:
     )
 
 
-def add_targets(df: DataFrame, source: DataFrame | None = None) -> DataFrame:
-    """future values joined on the exact timestamp, gaps in the series simply leave nulls.
+def add_targets(df: DataFrame) -> DataFrame:
+    """future values at exactly the horizon, gaps in the series simply leave nulls.
 
-    the future rows come from a narrow frame of keys and target columns, so each join adds a
-    small branch to the plan instead of another copy of the whole feature pipeline.
+    a frame of width zero placed h hours ahead holds the row of that very hour or nothing, and
+    it shares the partitioning and order of the rolling features, so the targets cost no shuffle
+    of their own. joining the table to itself once per target and horizon did, six times over a
+    wide table, and that pushed executors past their memory limit from a year of history on.
     """
-    narrow = (source if source is not None else df).select(
-        "location_id", "event_ts_utc", *[F.col(column) for column in TARGETS.values()]
-    )
+    seconds = F.col("event_ts_utc").cast("long")
+    base = Window.partitionBy("location_id").orderBy(seconds)
     result = df
     for target, column in TARGETS.items():
         for horizon in HORIZONS_H:
-            future = narrow.select(
-                F.col("location_id"),
-                (F.col("event_ts_utc") - F.expr(f"INTERVAL {horizon} HOURS")).alias("event_ts_utc"),
-                F.col(column).alias(target_column(target, horizon)),
-            )
-            result = result.join(future, KEY_COLUMNS, "left")
+            ahead = horizon * 3600
+            frame = base.rangeBetween(ahead, ahead)
+            result = result.withColumn(target_column(target, horizon), F.first(column).over(frame))
     return result
 
 
@@ -110,7 +108,7 @@ def build_feature_table(weather: DataFrame, air: DataFrame, with_targets: bool =
     joined = join_weather_air(weather, air)
     features = add_rolling_features(add_time_features(joined))
     if with_targets:
-        features = add_targets(features, source=joined)
+        features = add_targets(features)
     return features
 
 
