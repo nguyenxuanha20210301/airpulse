@@ -24,6 +24,16 @@ def build_spark_session(cfg: Config, app_name: str) -> SparkSession:
         builder = builder.config(
             "spark.cassandra.connection.host", ",".join(cfg.cassandra.hosts)
         ).config("spark.cassandra.connection.port", str(cfg.cassandra.port))
+    if cfg.hive.metastore_uri:
+        # tables registered by spark land in the shared metastore, which is what trino reads.
+        builder = (
+            builder.config("hive.metastore.uris", cfg.hive.metastore_uri)
+            .config("spark.sql.catalogImplementation", "hive")
+            .config(
+                "spark.sql.warehouse.dir", f"{cfg.hdfs.url}{cfg.hdfs.root}/{cfg.hive.warehouse_dir}"
+            )
+            .enableHiveSupport()
+        )
     return builder.getOrCreate()
 
 

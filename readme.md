@@ -116,11 +116,15 @@ and `--output` overrides for local runs.
 | Python | 3.11 locally, 3.10 in the Spark image |
 | Spark and PySpark | 3.5.9, Scala 2.12 connectors, Kafka connector 3.5.9, Cassandra connector 3.5.1 |
 | Java for Spark | 17 |
-| Kafka | Strimzi operator, KRaft mode |
+| Kafka | Strimzi operator 1.3.x, api `kafka.strimzi.io/v1`, KRaft mode |
+| Spark operator | kubeflow spark-operator chart 2.5.x |
 | Hadoop HDFS | 3.4.3 |
-| Hive metastore | 4.0.1 |
+| Hive metastore | 4.0.1 with embedded Derby |
 | Cassandra | 4.1 |
-| Trino, Superset, monitoring | current Helm charts from the official repositories |
+| Trino | chart 1.45.x, Trino 484 |
+| Superset | chart 0.x, Superset 6.1 |
+| Monitoring | kube-prometheus-stack, Grafana with the trino-datasource plugin |
+| Kubernetes | kind 0.33, Kubernetes 1.37 |
 
 ## Conventions
 

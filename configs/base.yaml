@@ -101,6 +101,14 @@ cassandra:
     alerts: rt_alerts
     forecast: rt_forecast
 
+hive:
+  # thrift endpoint of the metastore, empty keeps spark on its in memory catalog for laptop runs.
+  metastore_uri: ""
+  warehouse_dir: warehouse
+  # ddl of the external tables, relative to the repo root or the working directory, the spark
+  # image sets an absolute path through AIRPULSE_HIVE__DDL_FILE.
+  ddl_file: schemas/hive/tables.sql
+
 trino:
   url: ""
   hive_catalog: hive

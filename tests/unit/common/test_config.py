@@ -69,6 +69,7 @@ def test_every_profile_validates(profile: str) -> None:
     assert config.kafka.bootstrap_servers
     assert config.hdfs.url.startswith("hdfs://")
     assert config.cassandra.hosts
+    assert config.hive.metastore_uri.startswith("thrift://")
 
 
 def test_bench_extends_demo() -> None:

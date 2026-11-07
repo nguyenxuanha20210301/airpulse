@@ -15,11 +15,20 @@ from pathlib import Path
 
 from pyspark.sql import SparkSession
 
-from airpulse.common.config import Config, load_config
+from airpulse.common.config import REPO_ROOT, Config, load_config
 from airpulse.common.logging import get_logger, new_run_id
 from airpulse.common.spark import build_spark_session
 
-DDL_FILE = Path(__file__).resolve().parents[3] / "schemas" / "hive" / "tables.sql"
+
+def ddl_path(cfg: Config) -> Path:
+    """the ddl file from the config, absolute as is, otherwise under the repo root or the cwd."""
+    path = Path(cfg.hive.ddl_file)
+    if path.is_absolute():
+        return path
+    for base in (REPO_ROOT, Path.cwd()):
+        if (base / path).exists():
+            return base / path
+    raise FileNotFoundError(f"ddl file {path} not found, set AIRPULSE_HIVE__DDL_FILE")
 
 
 def statements(text: str, root: str) -> list[str]:
@@ -69,7 +78,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_id = new_run_id()
     log = get_logger("serving.register_tables", run_id, cfg.log_level)
     spark = build_spark_session(cfg, "register-tables")
-    names = register(spark, cfg, DDL_FILE.read_text(encoding="utf-8"), log)
+    names = register(spark, cfg, ddl_path(cfg).read_text(encoding="utf-8"), log)
     log.info("registered %d tables, %s", len(names), names)
     spark.stop()
     return 0

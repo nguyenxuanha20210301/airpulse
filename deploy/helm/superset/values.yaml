@@ -1,8 +1,12 @@
 # superset with the trino driver installed at startup. the secret key and the admin password
 # are placeholders for a local demo, change them for anything exposed outside the machine.
+# the chart default script installs the postgres and redis drivers, overriding it must keep them.
+# the image runs superset from /app/.venv while pip belongs to the system python, so uv installs
+# into that environment explicitly.
 bootstrapScript: |
   #!/bin/bash
-  pip install trino sqlalchemy-trino 2>/dev/null || pip install trino
+  uv pip install --python /app/.venv/bin/python psycopg2-binary redis trino
+  if [ ! -f ~/bootstrap ]; then echo "Running Superset with uid {{ .Values.runAsUser }}" > ~/bootstrap; fi
 extraSecretEnv:
   SUPERSET_SECRET_KEY: airpulse-local-demo-secret-key-change-me
 init:
@@ -24,12 +28,13 @@ supersetNode:
 supersetWorker:
   replicas:
     replicaCount: 1
+  # the celery worker forks several processes, below this limit it is killed at startup.
   resources:
     requests:
       cpu: 50m
-      memory: 384Mi
-    limits:
       memory: 768Mi
+    limits:
+      memory: 1536Mi
 supersetCeleryBeat:
   enabled: false
 postgresql:

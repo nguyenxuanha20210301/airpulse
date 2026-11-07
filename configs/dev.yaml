@@ -17,6 +17,9 @@ cassandra:
   replication_factor: 1
   consistency: ONE
 
+hive:
+  metastore_uri: thrift://hive-metastore.airpulse.svc:9083
+
 trino:
   url: http://trino.airpulse.svc:8080
 

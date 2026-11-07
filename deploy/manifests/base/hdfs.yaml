@@ -8,8 +8,8 @@ data:
   CORE-SITE.XML_fs.defaultFS: hdfs://hdfs-namenode:8020
   CORE-SITE.XML_hadoop.tmp.dir: /hadoop/tmp
   HDFS-SITE.XML_dfs.replication: "1"
-  HDFS-SITE.XML_dfs.namenode.name.dir: /hadoop/dfs/name
-  HDFS-SITE.XML_dfs.datanode.data.dir: /hadoop/dfs/data
+  HDFS-SITE.XML_dfs.namenode.name.dir: /hadoop/dfs/name/nn
+  HDFS-SITE.XML_dfs.datanode.data.dir: /hadoop/dfs/data/dn
   HDFS-SITE.XML_dfs.namenode.rpc-bind-host: 0.0.0.0
   HDFS-SITE.XML_dfs.namenode.http-bind-host: 0.0.0.0
   HDFS-SITE.XML_dfs.namenode.datanode.registration.ip-hostname-check: "false"
@@ -48,6 +48,16 @@ spec:
       labels:
         app: hdfs-namenode
     spec:
+      # the volume arrives owned by root, hadoop runs as uid 1000 and must own its directory.
+      initContainers:
+        - name: own-volume
+          image: apache/hadoop:3.4.3
+          securityContext:
+            runAsUser: 0
+          command: ["sh", "-c", "chown -R 1000:100 /hadoop/dfs/name"]
+          volumeMounts:
+            - name: name
+              mountPath: /hadoop/dfs/name
       containers:
         - name: namenode
           image: apache/hadoop:3.4.3
@@ -57,7 +67,7 @@ spec:
                 name: hdfs-config
           env:
             - name: ENSURE_NAMENODE_DIR
-              value: /hadoop/dfs/name
+              value: /hadoop/dfs/name/nn
             - name: HADOOP_HEAPSIZE_MAX
               value: 768m
           ports:
@@ -126,6 +136,16 @@ spec:
                   matchLabels:
                     app: hdfs-datanode
                 topologyKey: kubernetes.io/hostname
+      # the volume arrives owned by root, hadoop runs as uid 1000 and must own its directory.
+      initContainers:
+        - name: own-volume
+          image: apache/hadoop:3.4.3
+          securityContext:
+            runAsUser: 0
+          command: ["sh", "-c", "chown -R 1000:100 /hadoop/dfs/data"]
+          volumeMounts:
+            - name: data
+              mountPath: /hadoop/dfs/data
       containers:
         - name: datanode
           image: apache/hadoop:3.4.3

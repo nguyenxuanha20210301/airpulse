@@ -79,7 +79,7 @@
     },
     {
       "id": 3,
-      "title": "consumer group lag",
+      "title": "messages per second by topic from the kafka exporter, end offset growth",
       "type": "timeseries",
       "gridPos": {
         "x": 0,
@@ -97,8 +97,8 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(kafka_consumergroup_lag) by (consumergroup, topic)",
-          "legendFormat": "{{consumergroup}} {{topic}}",
+          "expr": "sum(rate(kafka_topic_partition_current_offset{topic!~\"__.*\"}[2m])) by (topic)",
+          "legendFormat": "{{topic}}",
           "refId": "A"
         }
       ],

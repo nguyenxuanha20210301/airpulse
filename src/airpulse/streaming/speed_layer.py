@@ -17,8 +17,14 @@ from pyspark.sql import functions as F
 from airpulse.common.config import Config, load_config
 from airpulse.common.logging import get_logger, new_run_id
 from airpulse.common.model_registry import ModelRegistry
-from airpulse.common.schemas import DS_AIR_HOURLY, DS_WEATHER_HOURLY, LAYER_MODELS, LAYER_RAW
-from airpulse.common.spark import build_spark_session, with_dt
+from airpulse.common.schemas import (
+    DS_AIR_HOURLY,
+    DS_WEATHER_HOURLY,
+    LAYER_MODELS,
+    LAYER_RAW,
+    WEATHER_METRICS,
+)
+from airpulse.common.spark import build_spark_session, with_dt, write_partitioned
 from airpulse.serving.cassandra_sink import read_table, write_batch
 from airpulse.streaming.anomaly_alerts import (
     air_threshold_alerts,
@@ -63,7 +69,12 @@ def write_kafka(df: DataFrame, cfg: Config, topic: str) -> None:
 
 
 def start_archive(spark: SparkSession, cfg: Config, args, log) -> list:
-    """copy every raw message to the master dataset on hdfs, partitioned by day."""
+    """copy every raw message to the master dataset on hdfs, partitioned by day.
+
+    the rows are appended with a plain parquet write instead of the streaming file sink, so
+    the directory carries no _spark_metadata log and batch readers see the backfilled files
+    too. a retried micro batch can append twice, the batch cleaning drops the copies.
+    """
     suffix = cfg.replay.topic_suffix if args.replay else None
     weather, air = raw_streams(spark, cfg, suffix)
     queries = []
@@ -71,12 +82,14 @@ def start_archive(spark: SparkSession, cfg: Config, args, log) -> list:
         ("weather", weather, DS_WEATHER_HOURLY),
         ("air", air, DS_AIR_HOURLY),
     ):
+        path = cfg.hdfs.dataset_path(LAYER_RAW, dataset)
+
+        def sink(batch_df: DataFrame, batch_id: int, path=path) -> None:
+            write_partitioned(with_dt(batch_df.where(F.col("event_id").isNotNull())), path)
+
         query = (
-            with_dt(stream.where(F.col("event_id").isNotNull()))
-            .writeStream.format("parquet")
-            .option("path", cfg.hdfs.dataset_path(LAYER_RAW, dataset))
+            stream.writeStream.foreachBatch(sink)
             .option("checkpointLocation", checkpoint_path(cfg, f"archive-{name}", args.replay))
-            .partitionBy("dt")
             .trigger(processingTime=cfg.streaming.trigger_interval)
             .queryName(f"archive-{name}")
             .start()
@@ -139,9 +152,10 @@ def start_windows(spark: SparkSession, cfg: Config, run_id: str, args, log) -> l
             def sink(batch_df: DataFrame, batch_id: int, table=table) -> None:
                 write_batch(batch_df, cfg, table)
 
+            # the watermark set before deduplication carries through the aggregation, a second
+            # one on the window end is rejected by spark once several stateful operators run.
             queries.append(
-                windowed.withWatermark("window_end", cfg.streaming.watermark_delay)
-                .writeStream.outputMode("update")
+                windowed.writeStream.outputMode("update")
                 .foreachBatch(sink)
                 .option(
                     "checkpointLocation",
@@ -209,28 +223,35 @@ def start_forecast(spark: SparkSession, cfg: Config, run_id: str, args, log) -> 
             state["models"] = load_models(registry)
         if not state["models"]:
             return
-        latest_air = latest_per_location(batch_df)
-        weather = read_table(spark, cfg, tables.weather_latest)
-        latest = latest_air.join(weather.drop("event_ts_utc"), "location_id", "left")
-        windows = read_table(spark, cfg, tables.air_windows)
-        weather_windows_df = read_table(spark, cfg, tables.weather_windows)
-        w3 = latest_windows(windows.where(F.col("window_size") == "3h")).join(
-            latest_windows(weather_windows_df.where(F.col("window_size") == "3h")).select(
-                "location_id", "avg_temperature"
-            ),
-            "location_id",
-            "left",
-        )
-        w24 = latest_windows(windows.where(F.col("window_size") == "24h")).join(
-            latest_windows(weather_windows_df.where(F.col("window_size") == "24h")).select(
-                "location_id", "avg_temperature", "avg_wind_speed", "avg_humidity"
-            ),
-            "location_id",
-            "left",
-        )
-        forecast = forecast_from_windows(state["models"], latest, w3, w24, run_id)
-        if forecast is not None:
-            write_batch(forecast, cfg, tables.forecast)
+        try:
+            latest_air = latest_per_location(batch_df)
+            # only the weather metrics are joined, the metadata columns exist on both sides.
+            weather = read_table(spark, cfg, tables.weather_latest).select(
+                "location_id", *WEATHER_METRICS
+            )
+            latest = latest_air.join(weather, "location_id", "left")
+            windows = read_table(spark, cfg, tables.air_windows)
+            weather_windows_df = read_table(spark, cfg, tables.weather_windows)
+            w3 = latest_windows(windows.where(F.col("window_size") == "3h")).join(
+                latest_windows(weather_windows_df.where(F.col("window_size") == "3h")).select(
+                    "location_id", "avg_temperature"
+                ),
+                "location_id",
+                "left",
+            )
+            w24 = latest_windows(windows.where(F.col("window_size") == "24h")).join(
+                latest_windows(weather_windows_df.where(F.col("window_size") == "24h")).select(
+                    "location_id", "avg_temperature", "avg_wind_speed", "avg_humidity"
+                ),
+                "location_id",
+                "left",
+            )
+            forecast = forecast_from_windows(state["models"], latest, w3, w24, run_id)
+            if forecast is not None:
+                write_batch(forecast, cfg, tables.forecast)
+        except Exception:
+            # a forecast problem must not stop the other queries, it is logged and retried later.
+            log.exception("forecast batch %d failed", batch_id)
 
     query = (
         air.writeStream.foreachBatch(sink)

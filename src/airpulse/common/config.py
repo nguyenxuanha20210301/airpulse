@@ -135,6 +135,13 @@ class CassandraConfig(StrictModel):
     tables: CassandraTables
 
 
+class HiveConfig(StrictModel):
+    metastore_uri: str = ""
+    # relative to the hdfs root, where managed tables and schemas created by trino live.
+    warehouse_dir: str = "warehouse"
+    ddl_file: str = "schemas/hive/tables.sql"
+
+
 class TrinoConfig(StrictModel):
     url: str
     hive_catalog: str
@@ -203,6 +210,7 @@ class Config(StrictModel):
     kafka: KafkaConfig
     hdfs: HdfsConfig
     cassandra: CassandraConfig
+    hive: HiveConfig = Field(default_factory=HiveConfig)
     trino: TrinoConfig
     spark: SparkConfig
     streaming: StreamingConfig
@@ -240,7 +248,9 @@ def deep_merge(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str
 
 def read_yaml_chain(path: Path, _seen: frozenset[Path] = frozenset()) -> dict[str, Any]:
     """read a yaml file and, when it has an extends key, merge it over the file it extends."""
-    path = path.resolve()
+    # absolute instead of resolve, a kubernetes configmap mounts files through symlinks into a
+    # timestamped directory and the sibling files must be looked up next to the symlink.
+    path = path.absolute()
     if path in _seen:
         raise ValueError(f"extends cycle at {path.name}")
     data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
@@ -292,7 +302,7 @@ def load_config(path: str | Path | None = None, environ: Mapping[str, str] | Non
         load_dotenv(REPO_ROOT / ".env", override=False)
         environ = os.environ
     config_path = Path(path) if path is not None else default_config_path(environ)
-    config_path = config_path.resolve()
+    config_path = config_path.absolute()
     data = apply_env_overrides(read_yaml_chain(config_path), environ)
     data["profile"] = config_path.stem
     data["config_dir"] = config_path.parent

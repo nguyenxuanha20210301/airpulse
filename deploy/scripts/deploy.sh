@@ -13,6 +13,12 @@ helm repo add superset https://apache.github.io/superset >/dev/null
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null
 helm repo update >/dev/null
 
+# images go first so the code in the cluster knows every key the configmap carries.
+echo "images"
+if [ "${SKIP_IMAGES:-0}" != "1" ]; then
+  sh "$REPO_ROOT/deploy/scripts/build_images.sh" "$PROFILE"
+fi
+
 echo "configs and secrets"
 kubectl -n "$NAMESPACE" create configmap airpulse-configs \
   --from-file=base.yaml="$REPO_ROOT/configs/base.yaml" \
@@ -26,10 +32,6 @@ kubectl -n "$NAMESPACE" create configmap airpulse-locations \
 if [ -f "$REPO_ROOT/.env" ]; then
   kubectl -n "$NAMESPACE" create secret generic airpulse-secrets \
     --from-env-file="$REPO_ROOT/.env" --dry-run=client -o yaml | kubectl apply -f -
-fi
-
-if [ "${SKIP_IMAGES:-0}" != "1" ]; then
-  sh "$REPO_ROOT/deploy/scripts/build_images.sh" "$PROFILE"
 fi
 
 echo "operators"

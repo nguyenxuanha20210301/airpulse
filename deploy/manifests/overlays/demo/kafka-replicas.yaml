@@ -1,11 +1,11 @@
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: dual-role
 spec:
   replicas: 3
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: kafka-cluster

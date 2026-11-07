@@ -34,6 +34,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -46,6 +48,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -93,6 +97,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -105,6 +111,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -152,6 +160,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -164,6 +174,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -211,6 +223,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -223,6 +237,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -270,6 +286,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -282,6 +300,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -329,6 +349,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -341,6 +363,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -388,6 +412,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse
@@ -400,6 +426,8 @@ spec:
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
+        - name: AIRPULSE_HIVE__DDL_FILE
+          value: /opt/airpulse/schemas/hive/tables.sql
       volumeMounts:
         - name: configs
           mountPath: /etc/airpulse

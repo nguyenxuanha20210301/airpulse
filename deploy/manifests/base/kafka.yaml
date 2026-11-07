@@ -1,6 +1,6 @@
 # kafka in kraft mode managed by strimzi, every node is both controller and broker. the overlay
 # sets the replica count and the replication settings of the profile.
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool
 metadata:
   name: dual-role
@@ -28,7 +28,7 @@ spec:
     -Xms: 512m
     -Xmx: 768m
 ---
-apiVersion: kafka.strimzi.io/v1beta2
+apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
   name: kafka-cluster

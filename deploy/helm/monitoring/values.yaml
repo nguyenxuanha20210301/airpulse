@@ -29,6 +29,7 @@ grafana:
   adminPassword: admin
   plugins:
     - trino-datasource
+  # the chart provisions the prometheus datasource itself with the uid prometheus, only trino is added.
   additionalDataSources:
     - name: Trino
       uid: trino
@@ -37,12 +38,6 @@ grafana:
       url: http://trino:8080
       jsonData:
         enableImpersonation: false
-    - name: Prometheus
-      uid: prometheus
-      type: prometheus
-      access: proxy
-      url: http://monitoring-kube-prometheus-prometheus:9090
-      isDefault: true
   sidecar:
     dashboards:
       enabled: true
