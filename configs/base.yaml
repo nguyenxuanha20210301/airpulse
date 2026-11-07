@@ -21,6 +21,10 @@ sources:
     timeout_s: 30
     # the api accepts several coordinates per call, which keeps the daily request count low.
     locations_per_request: 10
+    # the forecast endpoint keeps past hours from the models of the live feed, history inside
+    # that range is fetched there and only older history from the archive. it accepts start
+    # dates three months back but returns empty hours beyond about eight weeks.
+    forecast_past_days: 56
     weather_variables:
       - temperature_2m
       - relative_humidity_2m
@@ -140,6 +144,9 @@ streaming:
   slide: 1 hour
   # relative to hdfs root.
   checkpoint_dir: checkpoints
+  # records one micro batch reads from a topic at most, empty reads all that is available,
+  # which turns a backlog into a single large batch.
+  max_offsets_per_trigger:
 
 aqi:
   standard: us_epa

@@ -54,6 +54,7 @@ class OpenMeteoConfig(StrictModel):
     archive_url: str
     timeout_s: int = 30
     locations_per_request: int = Field(default=10, ge=1)
+    forecast_past_days: int = Field(default=56, ge=0)
     weather_variables: StrList
     air_variables: StrList
 
@@ -167,6 +168,7 @@ class StreamingConfig(StrictModel):
     windows: StrList
     slide: str
     checkpoint_dir: str
+    max_offsets_per_trigger: int | None = Field(default=None, ge=1)
 
 
 class AqiConfig(StrictModel):

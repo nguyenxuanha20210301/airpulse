@@ -134,3 +134,15 @@ def test_history_window_uses_the_archive_url(config, locations) -> None:
     assert session.calls[0]["url"] == config.sources.open_meteo.archive_url
     assert captured[0]["start_date"] == "2020-01-01"
     assert len(events) == 2
+
+
+def test_recent_history_comes_from_the_forecast_endpoint(config) -> None:
+    source = OpenMeteoSource(config, FakeSession([]))
+    today = date(2026, 11, 7)
+    recent = FetchWindow(start_date=date(2026, 10, 1), end_date=date(2026, 11, 6))
+    old = FetchWindow(start_date=date(2026, 9, 1), end_date=date(2026, 9, 30))
+    cfg = config.sources.open_meteo
+
+    assert source.weather_url(FetchWindow(past_hours=3), today) == cfg.weather_url
+    assert source.weather_url(recent, today) == cfg.weather_url
+    assert source.weather_url(old, today) == cfg.archive_url

@@ -7,7 +7,7 @@ timestamp. variable names from the api are mapped to the canonical column names 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from pydantic import BaseModel
@@ -131,10 +131,23 @@ class OpenMeteoSource(Source):
             batch.air.extend(self.fetch_air(chunk, window, run_id))
         return batch
 
+    def weather_url(self, window: FetchWindow, today: date | None = None) -> str:
+        """the forecast endpoint for the live window and recent history, the archive before that.
+
+        recent days then come from the same models as the live feed, and the archive, the most
+        rate limited endpoint of the free plan, only serves the years the forecast one lacks.
+        """
+        if not window.is_history:
+            return self.cfg.weather_url
+        today = today or utc_now().date()
+        if window.start_date >= today - timedelta(days=self.cfg.forecast_past_days):
+            return self.cfg.weather_url
+        return self.cfg.archive_url
+
     def fetch_weather(
         self, locations: Sequence[Location], window: FetchWindow, run_id: str
     ) -> list[WeatherEvent]:
-        url = self.cfg.archive_url if window.is_history else self.cfg.weather_url
+        url = self.weather_url(window)
         params = {**base_params(locations, window), "hourly": ",".join(self.weather_map)}
         payload = get_json(self.session, url, params, self.cfg.timeout_s)
         now = utc_now()

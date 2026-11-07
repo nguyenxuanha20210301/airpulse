@@ -27,6 +27,18 @@ spec:
   jvmOptions:
     -Xms: 512m
     -Xmx: 768m
+  # brokers prefer different nodes, so stopping one worker takes at most one replica away.
+  template:
+    pod:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    strimzi.io/pool-name: dual-role
+                topologyKey: kubernetes.io/hostname
 ---
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
