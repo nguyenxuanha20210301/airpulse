@@ -27,6 +27,8 @@ catalogs:
   hive: |
     connector.name=hive
     hive.metastore.uri=thrift://hive-metastore:9083
+    # trino 484 ships without a file system for hdfs urls unless the hadoop one is enabled.
+    fs.hadoop.enabled=true
     hive.non-managed-table-writes-enabled=true
   cassandra: |
     connector.name=cassandra

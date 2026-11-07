@@ -119,7 +119,7 @@ and `--output` overrides for local runs.
 | Kafka | Strimzi operator 1.3.x, api `kafka.strimzi.io/v1`, KRaft mode |
 | Spark operator | kubeflow spark-operator chart 2.5.x |
 | Hadoop HDFS | 3.4.3 |
-| Hive metastore | 4.0.1 with embedded Derby |
+| Hive metastore | 3.1.3 with embedded Derby |
 | Cassandra | 4.1 |
 | Trino | chart 1.45.x, Trino 484 |
 | Superset | chart 0.x, Superset 6.1 |

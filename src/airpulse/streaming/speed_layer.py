@@ -14,6 +14,7 @@ from collections.abc import Sequence
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 
+from airpulse.common.cleaning import clean_air
 from airpulse.common.config import Config, load_config
 from airpulse.common.logging import get_logger, new_run_id
 from airpulse.common.model_registry import ModelRegistry
@@ -212,7 +213,10 @@ def start_alerts(spark: SparkSession, cfg: Config, run_id: str, args, log) -> li
 
 def start_forecast(spark: SparkSession, cfg: Config, run_id: str, args, log) -> list:
     """score the latest air and weather values with the models from the registry."""
-    _, air = clean_streams(spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None)
+    # the sink only keeps the newest row per location of each batch, so the stream stays
+    # stateless. a deduplicated stream would leave a state version behind whenever the sink
+    # returns early, and the next batch could not load it.
+    _, air = raw_streams(spark, cfg, cfg.replay.topic_suffix if args.replay else None)
     tables = cfg.cassandra.tables
     registry = ModelRegistry(spark, cfg.hdfs.dataset_path(LAYER_MODELS, ""))
     state = {"models": load_models(registry)}
@@ -224,7 +228,7 @@ def start_forecast(spark: SparkSession, cfg: Config, run_id: str, args, log) -> 
         if not state["models"]:
             return
         try:
-            latest_air = latest_per_location(batch_df)
+            latest_air = latest_per_location(clean_air(batch_df))
             # only the weather metrics are joined, the metadata columns exist on both sides.
             weather = read_table(spark, cfg, tables.weather_latest).select(
                 "location_id", *WEATHER_METRICS

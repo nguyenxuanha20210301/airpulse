@@ -296,7 +296,9 @@ spec:
     executor:
       instances: 2
       cores: 1
-      memory: 1g
+      # the rolling windows shuffle the whole clean layer, so the executors get more room.
+      memory: 2g
+      memoryOverhead: 512m
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"
@@ -359,7 +361,9 @@ spec:
     executor:
       instances: 2
       cores: 1
-      memory: 1g
+      # gbt training keeps the feature table cached, 1g executors were oom killed.
+      memory: 2g
+      memoryOverhead: 512m
       env:
         - name: AIRPULSE_SPARK__USE_PACKAGES
           value: "false"

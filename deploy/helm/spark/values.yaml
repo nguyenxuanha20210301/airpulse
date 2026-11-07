@@ -5,12 +5,16 @@ spark:
     - airpulse
 controller:
   replicas: 1
+  # every submission forks a spark-submit jvm inside the controller, so the reconcile
+  # concurrency bounds the memory peak. ten workers were oom killed at 512Mi when the
+  # scheduled jobs and the speed layer were submitted in the same second.
+  workers: 3
   resources:
     requests:
       cpu: 100m
-      memory: 256Mi
-    limits:
       memory: 512Mi
+    limits:
+      memory: 2Gi
 webhook:
   enable: true
   resources:
