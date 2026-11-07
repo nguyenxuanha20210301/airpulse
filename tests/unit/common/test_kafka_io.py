@@ -74,3 +74,15 @@ def test_failed_deliveries_are_reported() -> None:
     assert tracker.failed == 2
     assert tracker.last_error == "boom"
     assert isinstance(tracker, DeliveryTracker)
+
+
+def test_send_events_can_defer_the_flush_to_the_caller() -> None:
+    producer = FakeProducer()
+    shared = DeliveryTracker()
+
+    send_events(producer, "t", [_alert(1)], tracker=shared, flush=False)
+    returned = send_events(producer, "t", [_alert(2), _alert(3)], tracker=shared, flush=False)
+
+    assert returned is shared
+    assert shared.delivered == 3
+    assert producer.flushed is False

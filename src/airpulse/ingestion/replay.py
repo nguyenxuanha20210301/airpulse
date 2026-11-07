@@ -19,7 +19,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
 from airpulse.common.config import Config, load_config
-from airpulse.common.kafka_io import ensure_topics, make_producer, send_events
+from airpulse.common.kafka_io import DeliveryTracker, ensure_topics, make_producer, send_events
 from airpulse.common.logging import get_logger, new_run_id
 from airpulse.common.schemas import (
     DS_AIR_HOURLY,
@@ -27,6 +27,7 @@ from airpulse.common.schemas import (
     LAYER_RAW,
     AirEvent,
     WeatherEvent,
+    location_key,
     make_event_id,
 )
 from airpulse.common.spark import build_spark_session
@@ -67,7 +68,8 @@ def rewrite(event: BaseModel, run_id: str, delta: timedelta, ingested: datetime)
         ts = event.event_ts_utc + delta
         domain = "air" if isinstance(event, AirEvent) else "weather"
         changes["event_ts_utc"] = ts
-        changes["event_id"] = make_event_id(event.source, event.location_id, ts, domain)
+        key = location_key(event.location_id, event.station_id)
+        changes["event_id"] = make_event_id(event.source, key, ts, domain)
     return event.model_copy(update=changes)
 
 
@@ -103,18 +105,25 @@ def replay_dataset(
     rows = df.orderBy("event_ts_utc").toLocalIterator()
     delta = timedelta(0)
     sent = 0
+    # without pacing nothing waits for the hour, one tracker and one flush at the end let the
+    # client send full batches instead of waiting for every hour to be acknowledged.
+    shared = None if pacing else DeliveryTracker()
     for index, (hour, events) in enumerate(hourly_groups(rows, model)):
         if index == 0 and shift:
             delta = shift_delta(hour)
         ingested = utc_now()
-        tracker = send_events(
-            producer, topic, [rewrite(e, run_id, delta, ingested) for e in events]
-        )
-        sent += tracker.delivered
-        if sent and sent % 10000 < len(events):
-            log.info("replayed %d events into %s, at hour %s", sent, topic, hour.isoformat())
+        batch = [rewrite(e, run_id, delta, ingested) for e in events]
+        tracker = send_events(producer, topic, batch, tracker=shared, flush=pacing)
+        sent = sent + tracker.delivered if pacing else tracker.delivered
         if pacing:
             time.sleep(3600.0 / speed)
+        if index % 1000 == 0:
+            log.info("replayed %d events into %s, at hour %s", sent, topic, hour.isoformat())
+    if shared is not None:
+        producer.flush()
+        sent = shared.delivered
+        if shared.failed:
+            log.error("%d messages failed, last error %s", shared.failed, shared.last_error)
     return sent
 
 

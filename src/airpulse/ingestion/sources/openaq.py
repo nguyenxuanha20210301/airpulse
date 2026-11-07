@@ -13,7 +13,7 @@ from typing import Any
 
 from airpulse.common.aqi import MOLAR_MASS, MOLAR_VOLUME_L
 from airpulse.common.config import Location
-from airpulse.common.schemas import AirEvent, make_event_id
+from airpulse.common.schemas import AirEvent, location_key, make_event_id
 from airpulse.common.time_utils import floor_to_hour, parse_iso_utc, utc_now
 from airpulse.ingestion.sources.base import FetchWindow, Source, SourceBatch, get_json
 
@@ -82,7 +82,7 @@ def parse_latest(
     station_id = str(station["id"])
     events = []
     for hour, metrics in sorted(by_hour.items()):
-        key = f"{location.location_id}/{station_id}"
+        key = location_key(location.location_id, station_id)
         events.append(
             AirEvent(
                 event_id=make_event_id(source, key, hour, "air"),

@@ -75,10 +75,19 @@ class DeliveryTracker:
 
 
 def send_events(
-    producer: Producer, topic: str, events: Iterable[BaseModel], key_field: str = "location_id"
+    producer: Producer,
+    topic: str,
+    events: Iterable[BaseModel],
+    key_field: str = "location_id",
+    tracker: DeliveryTracker | None = None,
+    flush: bool = True,
 ) -> DeliveryTracker:
-    """publish models as json keyed by location so one place stays in one partition."""
-    tracker = DeliveryTracker()
+    """publish models as json keyed by location so one place stays in one partition.
+
+    without flush the call returns as soon as the messages are queued, the caller shares one
+    tracker across calls and flushes once at the end, which lets the client fill its batches.
+    """
+    tracker = tracker if tracker is not None else DeliveryTracker()
     for event in events:
         payload = event.model_dump_json().encode("utf-8")
         key = str(getattr(event, key_field)).encode("utf-8")
@@ -90,6 +99,8 @@ def send_events(
                 # the local queue is full, serve callbacks until there is room again.
                 producer.poll(0.1)
         producer.poll(0)
+    if not flush:
+        return tracker
     producer.flush()
     if tracker.failed:
         log.error(
