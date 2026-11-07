@@ -15,15 +15,25 @@ from airpulse.common.config import Config
 from airpulse.common.schemas import AirEvent, WeatherEvent, spark_schema
 
 
+def kafka_source_options(cfg: Config, topic: str, starting: str = "latest") -> dict[str, str]:
+    """options of the kafka source, the starting offsets only apply to a new checkpoint."""
+    options = {
+        "kafka.bootstrap.servers": cfg.kafka.bootstrap_servers,
+        "subscribe": topic,
+        "startingOffsets": starting,
+        "failOnDataLoss": "false",
+    }
+    if cfg.streaming.max_offsets_per_trigger:
+        options["maxOffsetsPerTrigger"] = str(cfg.streaming.max_offsets_per_trigger)
+    return options
+
+
 def read_kafka_stream(
     spark: SparkSession, cfg: Config, topic: str, starting: str = "latest"
 ) -> DataFrame:
     return (
         spark.readStream.format("kafka")
-        .option("kafka.bootstrap.servers", cfg.kafka.bootstrap_servers)
-        .option("subscribe", topic)
-        .option("startingOffsets", starting)
-        .option("failOnDataLoss", "false")
+        .options(**kafka_source_options(cfg, topic, starting))
         .load()
     )
 
@@ -61,20 +71,24 @@ def to_kafka_frame(df: DataFrame, key_column: str = "location_id") -> DataFrame:
 
 
 def raw_streams(
-    spark: SparkSession, cfg: Config, suffix: str | None = None
+    spark: SparkSession, cfg: Config, suffix: str | None = None, starting: str = "latest"
 ) -> tuple[DataFrame, DataFrame]:
     """parsed weather and air streams, from the live topics or the replay topics."""
     topics = cfg.kafka.topics
     weather_topic = topics.weather_raw if suffix is None else f"{topics.weather_raw}.{suffix}"
     air_topic = topics.air_raw if suffix is None else f"{topics.air_raw}.{suffix}"
-    weather = parse_events(read_kafka_stream(spark, cfg, weather_topic), WeatherEvent)
-    air = parse_events(read_kafka_stream(spark, cfg, air_topic), AirEvent)
+    weather = parse_events(read_kafka_stream(spark, cfg, weather_topic, starting), WeatherEvent)
+    air = parse_events(read_kafka_stream(spark, cfg, air_topic, starting), AirEvent)
     return weather, air
 
 
 def clean_streams(
-    spark: SparkSession, cfg: Config, run_id: str, suffix: str | None = None
+    spark: SparkSession,
+    cfg: Config,
+    run_id: str,
+    suffix: str | None = None,
+    starting: str = "latest",
 ) -> tuple[DataFrame, DataFrame]:
-    weather, air = raw_streams(spark, cfg, suffix)
+    weather, air = raw_streams(spark, cfg, suffix, starting)
     delay = cfg.streaming.watermark_delay
     return clean_weather_stream(weather, delay, run_id), clean_air_stream(air, delay, run_id)

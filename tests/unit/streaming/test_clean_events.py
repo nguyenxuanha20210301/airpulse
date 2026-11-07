@@ -2,8 +2,14 @@ import json
 
 from tests.unit.streaming.conftest import air_event
 
+from airpulse.common.config import DEFAULT_CONFIG_DIR, load_config
 from airpulse.common.schemas import AirEvent
-from airpulse.streaming.clean_events import clean_air_stream, parse_events, to_kafka_frame
+from airpulse.streaming.clean_events import (
+    clean_air_stream,
+    kafka_source_options,
+    parse_events,
+    to_kafka_frame,
+)
 
 
 def test_parse_events_tolerates_malformed_messages(spark) -> None:
@@ -53,3 +59,20 @@ def test_kafka_frame_has_key_and_json_value(spark, clean_air_df) -> None:
     assert frame.columns == ["key", "value"]
     assert row["key"] in ("ha_noi", "da_nang")
     assert json.loads(row["value"])["location_id"] == row["key"]
+
+
+def test_kafka_source_reads_from_the_requested_offsets_and_caps_batches() -> None:
+    cfg = load_config(DEFAULT_CONFIG_DIR / "demo.yaml", environ={})
+    capped = load_config(
+        DEFAULT_CONFIG_DIR / "demo.yaml",
+        environ={"AIRPULSE_STREAMING__MAX_OFFSETS_PER_TRIGGER": "50000"},
+    )
+
+    plain = kafka_source_options(cfg, "air.raw.bench", "earliest")
+    limited = kafka_source_options(capped, "air.raw.bench")
+
+    assert plain["startingOffsets"] == "earliest"
+    assert plain["subscribe"] == "air.raw.bench"
+    assert "maxOffsetsPerTrigger" not in plain
+    assert limited["maxOffsetsPerTrigger"] == "50000"
+    assert limited["startingOffsets"] == "latest"

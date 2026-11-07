@@ -34,6 +34,7 @@ from airpulse.streaming.anomaly_alerts import (
 )
 from airpulse.streaming.clean_events import clean_streams, raw_streams, to_kafka_frame
 from airpulse.streaming.online_forecast import forecast_from_windows, load_models
+from airpulse.streaming.progress import ProgressLogger
 from airpulse.streaming.window_metrics import (
     air_windows,
     latest_per_location,
@@ -77,7 +78,7 @@ def start_archive(spark: SparkSession, cfg: Config, args, log) -> list:
     too. a retried micro batch can append twice, the batch cleaning drops the copies.
     """
     suffix = cfg.replay.topic_suffix if args.replay else None
-    weather, air = raw_streams(spark, cfg, suffix)
+    weather, air = raw_streams(spark, cfg, suffix, args.starting_offsets)
     queries = []
     for name, stream, dataset in (
         ("weather", weather, DS_WEATHER_HOURLY),
@@ -103,7 +104,7 @@ def start_archive(spark: SparkSession, cfg: Config, args, log) -> list:
 def start_clean(spark: SparkSession, cfg: Config, run_id: str, args, log) -> list:
     """publish clean events and keep the latest row per location in cassandra."""
     weather, air = clean_streams(
-        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None
+        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None, args.starting_offsets
     )
     tables = cfg.cassandra.tables
     topics = cfg.kafka.topics
@@ -134,7 +135,7 @@ def start_clean(spark: SparkSession, cfg: Config, run_id: str, args, log) -> lis
 def start_windows(spark: SparkSession, cfg: Config, run_id: str, args, log) -> list:
     """sliding window aggregates per location, every size in the config, upserted in cassandra."""
     weather, air = clean_streams(
-        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None
+        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None, args.starting_offsets
     )
     tables = cfg.cassandra.tables
     queries = []
@@ -173,7 +174,7 @@ def start_windows(spark: SparkSession, cfg: Config, run_id: str, args, log) -> l
 def start_alerts(spark: SparkSession, cfg: Config, run_id: str, args, log) -> list:
     """threshold alerts from each micro batch plus spikes against the 24 hour windows."""
     weather, air = clean_streams(
-        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None
+        spark, cfg, run_id, cfg.replay.topic_suffix if args.replay else None, args.starting_offsets
     )
     tables = cfg.cassandra.tables
     topic = cfg.kafka.topics.air_alerts
@@ -216,7 +217,8 @@ def start_forecast(spark: SparkSession, cfg: Config, run_id: str, args, log) -> 
     # the sink only keeps the newest row per location of each batch, so the stream stays
     # stateless. a deduplicated stream would leave a state version behind whenever the sink
     # returns early, and the next batch could not load it.
-    _, air = raw_streams(spark, cfg, cfg.replay.topic_suffix if args.replay else None)
+    suffix = cfg.replay.topic_suffix if args.replay else None
+    _, air = raw_streams(spark, cfg, suffix, args.starting_offsets)
     tables = cfg.cassandra.tables
     registry = ModelRegistry(spark, cfg.hdfs.dataset_path(LAYER_MODELS, ""))
     state = {"models": load_models(registry)}
@@ -278,6 +280,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if unknown:
         raise SystemExit(f"unknown queries {unknown}, choose from {QUERIES}")
     spark = build_spark_session(cfg, "speed-layer")
+    spark.streams.addListener(ProgressLogger(log))
     starters = {
         "archive": lambda: start_archive(spark, cfg, args, log),
         "clean": lambda: start_clean(spark, cfg, run_id, args, log),
