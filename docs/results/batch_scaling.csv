@@ -1,0 +1,16 @@
+finished_utc,profile,years,raw_rows,job,executors,executor_memory,overhead,shuffle_partitions,seconds
+2026-11-07T04:04:06Z,demo,1,1402272,batch-raw-to-clean,2,1536m,1g,96,123
+2026-11-07T04:05:48Z,demo,1,1402272,batch-trends,2,1536m,1g,96,94
+2026-11-07T04:08:00Z,demo,1,1402272,batch-features,2,1536m,1g,96,123
+2026-11-07T04:17:16Z,demo,5,6310224,batch-raw-to-clean,2,1536m,1g,96,544
+2026-11-07T04:21:19Z,demo,5,6310224,batch-trends,2,1536m,1g,96,232
+2026-11-07T04:29:15Z,demo,5,6310224,batch-features,2,1536m,1g,96,472
+2026-11-07T04:41:19Z,demo,5,6310224,batch-raw-to-clean,1,1536m,1g,96,718
+2026-11-07T04:46:02Z,demo,5,6310224,batch-trends,1,1536m,1g,96,281
+2026-11-07T04:56:27Z,demo,5,6310224,batch-features,1,1536m,1g,96,622
+2026-11-07T05:04:53Z,demo,5,6310224,batch-raw-to-clean,4,1536m,1g,96,499
+2026-11-07T05:09:07Z,demo,5,6310224,batch-trends,4,1536m,1g,96,253
+2026-11-07T05:16:54Z,demo,5,6310224,batch-features,4,1536m,1g,96,464
+2026-11-07T05:48:00Z,demo,10,12647664,batch-raw-to-clean,2,1536m,1g,96,1520
+2026-11-07T05:57:16Z,demo,10,12647664,batch-trends,2,1536m,1g,96,555
+2026-11-07T06:19:48Z,demo,10,12647664,batch-features,2,1536m,1g,96,1343
