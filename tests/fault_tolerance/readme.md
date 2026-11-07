@@ -1,15 +1,23 @@
 # fault tolerance drills
 
-each script removes one component on the running cluster and prints what to watch. run them
-one at a time from the repo root with the demo profile, which has three of everything.
+each script removes one component of the running demo cluster, checks that the system keeps
+answering while it is gone, measures how long it takes to come back and appends one line per
+measure to `docs/results/fault_tolerance.csv`. run them one at a time from the repo root with
+the demo profile, which has three brokers, three datanodes and three cassandra nodes spread over
+three workers. `docs/results/fault_tolerance.md` holds the numbers of the last campaign.
 
-| script | what it does | expected outcome |
+| script | what it does | what is checked |
 |---|---|---|
-| `kill_broker.sh` | deletes one kafka broker pod | producer and speed layer keep running, under replicated partitions rise then return to zero when the pod is back, no gap in the clean topics |
-| `kill_datanode.sh` | deletes one datanode pod | reads of the raw layer still succeed because every block has two copies, the namenode re replicates after the heartbeat timeout |
-| `kill_cassandra.sh` | deletes one cassandra pod | writes and reads at LOCAL_QUORUM succeed with two of three nodes, `nodetool status` shows the node down then up again |
-| `kill_executor.sh` | deletes one speed layer executor pod | the driver asks for a new executor, the micro batch is retried from the checkpoint, no duplicate rows in cassandra thanks to the upsert keys |
-| `kill_driver.sh` | deletes the speed layer driver pod | the operator restarts the application and it resumes from the kafka offsets in the checkpoint |
-| `stop_worker.sh` | stops one kind worker node | pods on that node are rescheduled, the services stay reachable, start the node again with the same script and `start` |
+| `kill_broker.sh` | deletes one kafka broker while a producer writes with acks all | the producer never stops, acknowledged records equal the records found in the topic, under replicated partitions go back to zero |
+| `kill_datanode.sh` | deletes one datanode | the whole raw air layer is counted through trino while it is away and the count matches the one taken before |
+| `kill_cassandra.sh` | deletes one cassandra node | writes and reads at QUORUM succeed with two of three replicas, a read at ALL is refused until the node is back |
+| `kill_executor.sh` | deletes one speed layer executor | a replacement executor starts, a later producer cycle is processed, the driver does not restart |
+| `kill_driver.sh` | deletes the speed layer driver | the operator submits the application again and the queries go on from the batch numbers in their checkpoints |
+| `stop_worker.sh` | stops a whole kind worker node, then starts it again | cassandra QUORUM reads and HDFS reads keep working with one node of each gone, the time until the node and every pod are back |
 
-the cluster dashboard in grafana shows the effect on partitions, lag and pod readiness.
+the scripts read hosts and the replication factor from the profile config through the
+virtualenv, `make setup` must have run. `kill_executor.sh` and `kill_driver.sh` restart the
+producer to push a fresh cycle through the speed layer instead of waiting half an hour, which
+costs one round of api calls. `stop_worker.sh` picks a worker that runs neither the namenode nor
+the metastore, the two components that have a single instance, and `HOLD` sets how long the
+node stays down.
