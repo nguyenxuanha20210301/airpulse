@@ -65,7 +65,8 @@ The archive endpoint of Open-Meteo refused every request with `429 Too many conc
 requests` during the run, so the weather history of the last eight weeks came from the forecast
 endpoint, see `docs/data_sources.md`. That endpoint has no values before 2026-09-10, weather
 for 2026-09-01 to 2026-09-09 is therefore missing for most points while air quality is
-complete, 4,284 point days in `daily_by_point` of which 3,987 have weather.
+complete, 4,284 point days in `daily_by_point` of which 3,987 have weather. The gap was filled
+later, see the gap fill section below.
 
 The imported Superset dashboard rendered its eighteen charts without error on the new
 instance, screenshots are under `docs/images/superset_*.png`. The Grafana overview showed the
@@ -88,3 +89,67 @@ took between 25 s for the archive queries and 150 s for the alert queries. Thirt
 share two executors of one core each, so a batch waits for the others, and the first batch of
 each query also pays for the connections and the state store setup. The trigger is one minute,
 the realtime view therefore lags the source by one to three minutes on this profile.
+
+## Gap fill
+
+The archive endpoint answered again later on 2026-11-07. The weather of 2026-09-01 to 2026-09-09
+was backfilled with `--domain weather`, 13,608 rows for 63 points and 216 hours, with the command
+of `docs/runbook.md`. The hours lost while the machine was off, 15 on 2026-11-07 and 20 on
+2026-11-08, were filled the same way for both domains on 2026-11-09, 3,024 rows each, the
+forecast endpoint still holds those days. A filled event gets the same id as the copy the
+producer had already sent, the two days hold 3,024 distinct ids in 3,024 clean rows per domain.
+
+Each fill was followed by `make batch PROFILE=demo`, which runs the jobs one after the other with
+two executors each and then refreshes the Trino views. Superset was scaled to zero during both
+chains. At the peak of `ml-train` the host still had about 2.2 GiB available with 1.9 GiB of swap
+in use, and the memory pressure stayed below one percent.
+
+| Job | After the September fill | After the outage fill |
+|---|---|---|
+| `raw_to_clean` | 163 s | 91 s |
+| `trends` | 71 s | 61 s |
+| `correlations` | 71 s | 71 s |
+| `mapreduce` | 40 s | 40 s |
+| `features` | 61 s | 71 s |
+| `ml-train` | 304 s | 305 s |
+| `register_tables` | 61 s | 61 s |
+| Whole chain with the views | 12 min 51 s | 11 min 40 s |
+
+The first `raw_to_clean` overlapped with the start of the thirteen speed layer queries. After
+both fills `daily_by_point` holds 4,347 point days, 63 points for the 69 days from 2026-09-01 to
+2026-11-08, all with weather and air quality, and the clean layer holds 104,328 hourly rows per
+domain, one per point and hour.
+
+| Forecast after the fill, holdout MAE | 1 h | 6 h | 24 h |
+|---|---|---|---|
+| PM2.5, gradient boosted trees | 2.023 | 6.112 | 7.601 |
+| PM2.5, persistence | 2.141 | 8.467 | 7.525 |
+| PM2.5, same hour yesterday | 7.420 | 7.466 | 7.525 |
+| temperature, gradient boosted trees | 0.380 | 0.835 | 1.041 |
+| temperature, persistence | 0.649 | 2.829 | 0.848 |
+| temperature, same hour yesterday | 0.841 | 0.841 | 0.848 |
+
+The trees win at 1 h and 6 h for both targets. One day ahead persistence, which at that horizon
+is the value of the same hour yesterday, is now better for both, by 1 percent for PM2.5 and 23
+percent for temperature, while the first run still had the trees ahead for PM2.5. The holdout is
+the last 30 days. Its mean temperature is 26.7 degrees against 26.9 in the training days and 0.8
+percent of its hours are colder than anything the model saw at the same point, so a change of
+season between the two parts does not explain the gap.
+
+## Restarts of the machine
+
+Three incidents in the days after the first run stopped the machine or the cluster. The causes
+were in the setup of the cluster rather than in the jobs, each one changed a default of the repo.
+
+| Moment | What happened | Change |
+|---|---|---|
+| 2026-11-07, during `features` | The batch job with three executors, the speed layer, Trino and Superset pushed the host into swap. `systemd-oomd` of Ubuntu then killed the terminal session that drove the run, it acts on the desktop session and not on the containers | batch jobs of the demo profile run with two executors, the benchmark found four only 3 percent faster than two |
+| 2026-11-08, after a restart | The Spark operator came back with seven nightly runs missed and started all of them within 24 s, next to the speed layer and the stopped dev cluster, which Docker had started again because of its restart policy. Every kind node reports the whole memory of the host as allocatable, 31 GiB each, so the scheduler placed every driver and executor, the kernel ran out of memory and swap and the machine froze | the schedules are created suspended, `make batch` runs the jobs one after the other, `docker update --restart=no` keeps the dev nodes down |
+| 2026-11-09, after a restart | The inotify limits were back at the default of 128 instances, the line in `/etc/sysctl.conf` is not read at boot by Ubuntu 26.04. kube-proxy failed on every node with `fsnotify watcher init: too many open files`, service addresses stopped answering and Kafka, Cassandra and the operators restarted in a loop | the limits go to `/etc/sysctl.d/90-kind.conf`, see `docs/runbook.md` |
+
+After the third incident the Spark operator controller was scaled to zero until the schedules were
+suspended, so it could not start the missed runs a second time. Once the limits were raised
+kube-proxy stayed up, the brokers, the Cassandra nodes and the operators left their back off
+within about ten minutes, and the operator submitted the speed layer again, its restart policy is
+`Always`. The speed layer resumed from its checkpoints, the producer published its next cycle
+and the realtime view caught up without further steps.
