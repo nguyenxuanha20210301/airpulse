@@ -21,10 +21,7 @@ if [ "$state" != "COMPLETED" ]; then
 fi
 
 echo "batch jobs once, in order"
-for job in batch-raw-to-clean batch-trends batch-correlations batch-mapreduce batch-features ml-train register-tables; do
-  sh "$REPO_ROOT/deploy/scripts/run_job.sh" "$PROFILE" "$job"
-done
-sh "$REPO_ROOT/deploy/scripts/apply_views.sh" "$PROFILE"
+sh "$REPO_ROOT/deploy/scripts/run_batch.sh" "$PROFILE"
 if kubectl -n "$NAMESPACE" get deploy superset >/dev/null 2>&1; then
   sh "$REPO_ROOT/deploy/scripts/import_dashboards.sh" "$PROFILE"
 fi

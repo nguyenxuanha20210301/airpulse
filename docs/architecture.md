@@ -24,7 +24,8 @@ the dashboards.
      `air.alerts` topic and Cassandra.
    - `forecast` scores the latest values with the models of the batch layer and writes the
      1h, 6h and 24h forecasts to Cassandra.
-3. The batch layer runs nightly as scheduled Spark applications.
+3. The batch layer is a chain of Spark applications, run in order by `make batch`, with a
+   nightly schedule per job that starts suspended on a laptop, see `docs/runbook.md`.
    - `raw_to_clean` rebuilds the clean layer exactly, the last ingested copy of each event wins.
    - `trends` produces daily, monthly, seasonal and yearly tables, the month by hour heatmap
      in local time and the count of days above the WHO and QCVN limits.
@@ -76,5 +77,7 @@ message and the run that produced each step.
 The demo profile fits a 32 GB machine with the limits set in the manifests. Kafka uses about
 1.5 GB per broker, HDFS 1 GB for the namenode and 0.75 GB per datanode, Cassandra 2 GB per
 node, the speed layer 2 GB, Trino 2 GB per node, monitoring 1.5 GB and Superset 2 GB. Batch
-jobs run at night when the speed layer is the only other Spark application. Superset can be
-skipped with `SKIP_SUPERSET=1` when memory is tight.
+jobs run one at a time, so the speed layer is the only other Spark application. Every kind node
+reports the whole memory of the host as allocatable, the scheduler therefore never holds a pod
+back and only these limits and the order of the jobs keep the total within the machine.
+Superset can be skipped with `SKIP_SUPERSET=1` when memory is tight.

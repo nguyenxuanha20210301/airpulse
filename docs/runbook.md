@@ -14,10 +14,16 @@ KIND_VERSION=$(curl -s https://api.github.com/repos/kubernetes-sigs/kind/release
 curl -Lo kind "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-amd64"
 sudo install -m 0755 kind /usr/local/bin/kind && rm kind
 curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-echo 'fs.inotify.max_user_watches=524288' | sudo tee -a /etc/sysctl.conf
-echo 'fs.inotify.max_user_instances=512' | sudo tee -a /etc/sysctl.conf
-sudo sysctl -p
+printf 'fs.inotify.max_user_watches=524288\nfs.inotify.max_user_instances=512\n' | sudo tee /etc/sysctl.d/90-kind.conf
+sudo sysctl --system
 ```
+
+Every node of a kind cluster runs kubelet, containerd and dozens of pods that watch files, the
+default of 128 inotify instances runs out and kube-proxy then fails with `fsnotify watcher init:
+too many open files`, which takes down every service address of the cluster. The limits go to
+`/etc/sysctl.d`, Ubuntu 26.04 no longer reads `/etc/sysctl.conf` at boot, so lines written there
+only last until the next restart. `cat /proc/sys/fs/inotify/max_user_instances` shows the value
+in force.
 
 ## 2. Python environment and tests
 
@@ -49,8 +55,16 @@ CLUSTER_NAME=airpulse-demo make demo PROFILE=demo
 ```
 
 `docker start` on the two dev nodes and `kubectl config use-context kind-airpulse` bring the dev
-cluster back later. On the demo profile the producer restarts a few times right after the
-deployment, until the third broker has joined and topics with three replicas can be created.
+cluster back later. kind creates its nodes with the restart policy `on-failure` and a stopped
+node exits with code 137, so Docker starts it again at the next boot, both clusters then share
+the memory of the machine. `docker update --restart=no airpulse-control-plane airpulse-worker`
+keeps the dev nodes down until they are started by hand. On the demo profile the producer
+restarts a few times right after the deployment, until the third broker has joined and topics
+with three replicas can be created.
+
+After a restart of the machine the nodes come back by themselves and the pods recover within a
+few minutes. If `kube-proxy` in `kube-system` keeps crashing, the inotify limits of section 1
+are not in force.
 
 `deploy.sh` is idempotent. It creates the configmaps from `configs/`, the secret from `.env`,
 installs the Strimzi and Spark operators with Helm, applies the kustomize overlay of the
@@ -63,7 +77,31 @@ images already loaded and `SKIP_SUPERSET=1` to save memory.
 The producer starts with the deployment and publishes every 30 minutes. History is loaded with
 the one off backfill application, edit the dates in `deploy/manifests/base/spark-oneoff.yaml`
 and apply it, or run `make demo` which backfills two months, runs every batch job once and
-starts a replay. The scheduled batch applications run nightly after that.
+starts a replay.
+
+The nightly schedules of the batch jobs are created suspended. A laptop is rarely on all night,
+and when the Spark operator comes back after the machine was off it starts every missed run at
+once, seven applications next to the speed layer, which once ran the machine out of memory.
+`make batch PROFILE=demo` runs the jobs one after the other and refreshes the Trino views. On a
+cluster that stays on, the schedules can be resumed one by one.
+
+```bash
+kubectl -n airpulse patch scheduledsparkapplication batch-raw-to-clean --type merge -p '{"spec":{"suspend":false}}'
+```
+
+A gap in the history, for example when an API refused requests during a backfill, is filled by
+running the backfill module on the template of a scheduled job, then the batch jobs in order.
+The events of the gap get the same ids as any copy already stored, so `raw_to_clean` keeps one
+row per hour.
+
+```bash
+APP_NAME=backfill-gap MODULE=airpulse.ingestion.backfill EXECUTORS=1 \
+  sh deploy/scripts/run_job.sh demo batch-raw-to-clean --start 2026-09-01 --end 2026-09-09 --domain weather
+make batch PROFILE=demo
+```
+
+The jobs read the configuration from the `airpulse-configs` configmap, which `make deploy`
+creates from `configs/`, after a change of `configs/` run `SKIP_IMAGES=1 make deploy` first.
 
 The Superset dashboard is loaded from `dashboards/superset/assets` by
 `deploy/scripts/import_dashboards.sh`, which `make demo` calls once the Trino views exist. After

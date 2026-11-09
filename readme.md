@@ -85,6 +85,10 @@ make port-forward PROFILE=dev
 make demo PROFILE=dev
 ```
 
+`make batch PROFILE=dev` runs the batch layer again, one job after the other. The nightly
+schedules of the batch jobs are created suspended, a laptop that was off would otherwise start
+every missed run at once.
+
 The step by step procedure, including laptop runs of the jobs on local directories, is in
 `docs/runbook.md`. The architecture and the reasons behind each component are in
 `docs/architecture.md`, the sources and their quirks in `docs/data_sources.md`.

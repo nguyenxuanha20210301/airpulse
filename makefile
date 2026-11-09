@@ -18,7 +18,7 @@ export PYSPARK_DRIVER_PYTHON ?= $(CURDIR)/$(BIN)/python
 export UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export PIP_CACHE_DIR ?= $(CURDIR)/.cache/pip
 
-.PHONY: help setup lint format test check schemas clean cluster-up cluster-down deploy port-forward demo
+.PHONY: help setup lint format test check schemas clean cluster-up cluster-down deploy port-forward demo batch
 
 help:
 	@echo "setup         create the virtualenv and install the package with dev tools"
@@ -33,6 +33,7 @@ help:
 	@echo "deploy        install or upgrade every component on the cluster"
 	@echo "port-forward  expose dashboards and apis on localhost"
 	@echo "demo          run the end to end demo scenario"
+	@echo "batch         run every batch job once in order and refresh the trino views"
 
 setup:
 ifdef UV
@@ -78,3 +79,6 @@ port-forward:
 
 demo:
 	sh $(SCRIPTS)/demo.sh $(PROFILE)
+
+batch:
+	sh $(SCRIPTS)/run_batch.sh $(PROFILE)

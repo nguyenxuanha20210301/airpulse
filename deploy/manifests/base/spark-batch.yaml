@@ -1,5 +1,9 @@
 # the batch layer as scheduled spark applications, one per job, staggered through the night so
 # each step reads what the previous one wrote. times are UTC, one in the morning in vietnam.
+# the schedules start suspended. a laptop is rarely on all night, and when the operator comes
+# back it starts every missed run at once, seven applications next to the speed layer, which ran
+# the machine out of memory. deploy/scripts/run_batch.sh runs the same jobs one after the other,
+# an always on cluster can resume the schedules, see docs/runbook.md.
 apiVersion: sparkoperator.k8s.io/v1beta2
 kind: ScheduledSparkApplication
 metadata:
@@ -9,6 +13,7 @@ metadata:
 spec:
   schedule: "0 18 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -72,6 +77,7 @@ metadata:
 spec:
   schedule: "30 18 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -135,6 +141,7 @@ metadata:
 spec:
   schedule: "45 18 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -198,6 +205,7 @@ metadata:
 spec:
   schedule: "0 19 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -261,6 +269,7 @@ metadata:
 spec:
   schedule: "15 19 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -326,6 +335,7 @@ metadata:
 spec:
   schedule: "0 20 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
@@ -391,6 +401,7 @@ metadata:
 spec:
   schedule: "0 21 * * *"
   concurrencyPolicy: Forbid
+  suspend: true
   successfulRunHistoryLimit: 3
   failedRunHistoryLimit: 3
   template:
