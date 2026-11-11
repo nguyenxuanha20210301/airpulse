@@ -25,7 +25,7 @@ export IPYTHONDIR ?= $(CURDIR)/.cache/ipython
 export MPLCONFIGDIR ?= $(CURDIR)/.cache/matplotlib
 NOTEBOOK_OUT := .cache/notebooks
 
-.PHONY: help setup setup-notebook lint format test check schemas clean cluster-up cluster-down deploy port-forward demo batch notebook notebook-run notebook-clean
+.PHONY: help setup setup-notebook lint format test check schemas clean cluster-up cluster-down cluster-stop cluster-start deploy port-forward demo batch notebook notebook-run notebook-clean
 
 help:
 	@echo "setup           create the virtualenv and install the package with dev tools"
@@ -37,6 +37,8 @@ help:
 	@echo "clean           remove caches and build output, keeps the virtualenv"
 	@echo "cluster-up      create the local kubernetes cluster, PROFILE=dev by default"
 	@echo "cluster-down    delete the local kubernetes cluster"
+	@echo "cluster-stop    stop the nodes and keep the data, the cluster stays down across reboots"
+	@echo "cluster-start   start a stopped cluster and wait for the stores and the speed layer"
 	@echo "deploy          install or upgrade every component on the cluster"
 	@echo "port-forward    expose dashboards and apis on localhost"
 	@echo "demo            run the end to end demo scenario"
@@ -81,6 +83,12 @@ cluster-up:
 
 cluster-down:
 	sh $(SCRIPTS)/cluster_down.sh $(PROFILE)
+
+cluster-stop:
+	sh $(SCRIPTS)/cluster_stop.sh $(PROFILE)
+
+cluster-start:
+	sh $(SCRIPTS)/cluster_start.sh $(PROFILE)
 
 deploy:
 	sh $(SCRIPTS)/deploy.sh $(PROFILE)

@@ -44,27 +44,42 @@ make deploy PROFILE=dev          # builds the images, installs everything, appli
 make port-forward PROFILE=dev    # grafana on 3000, trino on 8080, hdfs on 9870, superset on 8088
 ```
 
-To try the demo profile without losing the dev cluster, stop the dev nodes and create the demo
+To try the demo profile without losing the dev cluster, stop the dev cluster and create the demo
 cluster under another name, the variable goes to every make target of that cluster.
 
 ```bash
-docker stop airpulse-control-plane airpulse-worker
+make cluster-stop PROFILE=dev
 CLUSTER_NAME=airpulse-demo make cluster-up PROFILE=demo
 CLUSTER_NAME=airpulse-demo make deploy PROFILE=demo
 CLUSTER_NAME=airpulse-demo make demo PROFILE=demo
 ```
 
-`docker start` on the two dev nodes and `kubectl config use-context kind-airpulse` bring the dev
-cluster back later. kind creates its nodes with the restart policy `on-failure` and a stopped
-node exits with code 137, so Docker starts it again at the next boot, both clusters then share
-the memory of the machine. `docker update --restart=no airpulse-control-plane airpulse-worker`
-keeps the dev nodes down until they are started by hand. On the demo profile the producer
-restarts a few times right after the deployment, until the third broker has joined and topics
-with three replicas can be created.
+On the demo profile the producer restarts a few times right after the deployment, until the
+third broker has joined and topics with three replicas can be created.
 
-After a restart of the machine the nodes come back by themselves and the pods recover within a
-few minutes. If `kube-proxy` in `kube-system` keeps crashing, the inotify limits of section 1
-are not in force.
+A cluster is stopped and started again without losing its data with
+
+```bash
+CLUSTER_NAME=airpulse-demo make cluster-stop PROFILE=demo
+CLUSTER_NAME=airpulse-demo make cluster-start PROFILE=demo
+```
+
+`cluster-stop` gives the nodes two minutes to shut down and keeps every volume. kind creates
+its nodes with the restart policy `on-failure` and a stopped node exits with an error code, so
+Docker would start it again at the next boot, next to whatever else the machine runs. The
+target clears the policy first, the cluster then stays down until `cluster-start`.
+
+`cluster-start` starts the nodes, selects the kubectl context and waits for the nodes, HDFS,
+Cassandra and the speed layer. On 2026-11-11 the demo cluster had its thirteen streaming
+queries running again 7 minutes after the nodes were started. The first submission of the
+speed layer can fail with `SafeModeException`, the namenode refuses writes until the datanodes
+have reported their blocks, and the operator submits it again a few minutes later. The queries
+resume from their checkpoints. The target ends by printing the backfill command for the hours
+the cluster was down, section 4 explains it.
+
+A cluster that was not stopped this way comes back by itself after a restart of the machine
+and the pods recover within a few minutes. If `kube-proxy` in `kube-system` keeps crashing, the
+inotify limits of section 1 are not in force.
 
 `deploy.sh` is idempotent. It creates the configmaps from `configs/`, the secret from `.env`,
 installs the Strimzi and Spark operators with Helm, applies the kustomize overlay of the
