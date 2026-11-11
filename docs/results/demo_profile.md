@@ -153,3 +153,48 @@ kube-proxy stayed up, the brokers, the Cassandra nodes and the operators left th
 within about ten minutes, and the operator submitted the speed layer again, its restart policy is
 `Always`. The speed layer resumed from its checkpoints, the producer published its next cycle
 and the realtime view caught up without further steps.
+
+## Stop and start by hand
+
+The demo cluster was stopped on 2026-11-09 to free the machine, with `docker update --restart=no`
+and `docker stop -t 120` on its four nodes, and started again with `docker start` about 65 hours
+later. Docker gives out addresses in start order, so the nodes were started one by one in an order
+that returned the control plane to its former address. Two workers came back with another
+address and rejoined without further steps.
+
+| Time after `docker start` | State |
+|---|---|
+| 1 min 34 s | the producer is back and has published 252 weather and 252 air events |
+| 1 min 52 s | the first submission of the speed layer fails, the namenode is still in safe mode and refuses to create the checkpoint directory |
+| 4 min 25 s | the operator submits the speed layer again |
+| about 5 min | Kafka, HDFS, Cassandra, the metastore, Trino and the speed layer driver are ready, HDFS reports three live datanodes and no missing or under replicated block |
+| 7 min 2 s | thirteen queries are running, each resumed at its next batch, 20 for the archive and 25 to 27 for the others, from the offsets committed before the stop |
+
+The first micro batches after the start read the 252 events of the producer per topic, the
+archive wrote them in 20 s and 24 s on a cold executor and the next cycle in 6 s and 9 s.
+
+The live stream had stopped after 01:00 UTC on 2026-11-09 and a producer cycle only refetches
+three hours, so 61 hours were missing, from 02:00 UTC on 2026-11-09 to 14:00 UTC on 2026-11-11.
+The backfill of 2026-11-09 to 2026-11-11 stored 4,284 events per domain in 50 s, 63 points for
+the 68 hours up to the running one. A range that ends today used to bring the forecast for the
+rest of the day with it, the Open-Meteo source now leaves out the hours that have not started
+for history ranges as well. `make batch PROFILE=demo` followed with Superset scaled to zero and
+took 11 min 1 s, `raw_to_clean` 91 s, `trends` 61 s, `correlations` 71 s, `mapreduce` 40 s,
+`features` 61 s, `ml-train` 284 s and `register_tables` 50 s. During `ml-train` the host had
+about 3.3 GiB available with 1.7 GiB of swap in use.
+
+After the chain the clean layer holds 108,612 hourly rows per domain, one per point and hour
+from 2026-09-01 00:00 to 2026-11-11 19:00 UTC and none later than the run, and `daily_by_point`
+holds 4,536 point days, 63 points for 72 days, all with weather and air quality.
+
+| Forecast after this fill, holdout MAE | 1 h | 6 h | 24 h |
+|---|---|---|---|
+| PM2.5, gradient boosted trees | 1.825 | 5.601 | 7.182 |
+| PM2.5, persistence | 1.972 | 7.872 | 6.975 |
+| PM2.5, same hour yesterday | 6.927 | 6.923 | 6.975 |
+| temperature, gradient boosted trees | 0.444 | 0.900 | 1.001 |
+| temperature, persistence | 0.639 | 2.775 | 0.945 |
+| temperature, same hour yesterday | 0.949 | 0.947 | 0.945 |
+
+The order did not change, the trees win at 1 h and 6 h and persistence stays ahead one day
+ahead, now by 3 percent for PM2.5 and 6 percent for temperature.

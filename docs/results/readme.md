@@ -6,7 +6,7 @@ plane and three workers. The CSV files are appended by the scripts under `tests/
 
 | File | Content |
 |---|---|
-| `demo_profile.md` | deployment of the demo profile, placement, memory, replication checks, demo run, gap fill, restarts of the machine |
+| `demo_profile.md` | deployment of the demo profile, placement, memory, replication checks, demo run, gap fill, restarts of the machine, stop and start by hand |
 | `batch_scaling.md`, `batch_scaling.csv` | batch job duration against history size and executor count |
 | `stream_scaling.md`, `stream_scaling.csv` | replay rate and speed layer processing rate against executor count |
 | `trino_scaling.md`, `trino_scaling.csv` | one aggregation over ten years of history with one and two Trino workers |
