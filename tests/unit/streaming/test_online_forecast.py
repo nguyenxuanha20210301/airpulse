@@ -1,3 +1,5 @@
+import time
+
 from pyspark.ml import Pipeline
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.regression import LinearRegression
@@ -11,6 +13,8 @@ from airpulse.streaming.online_forecast import (
     forecast_from_windows,
     load_models,
     model_name,
+    model_versions,
+    refresh_models,
 )
 
 
@@ -39,6 +43,26 @@ def test_registry_saves_versions_and_serves_the_latest(spark, tmp_path) -> None:
     assert registry.latest_version(model_name("pm2_5", 1)) == first
     assert meta["run_id"] == "r1" and meta["version"] == first
     assert loaded.stages[-1].coefficients.size == len(FEATURE_COLUMNS)
+
+
+def test_refresh_serves_a_new_version_and_keeps_the_unchanged_models(spark, tmp_path) -> None:
+    registry = ModelRegistry(spark, str(tmp_path / "models"))
+    registry.save(_train_tiny(spark), model_name("pm2_5", 1), {})
+    registry.save(_train_tiny(spark), model_name("temperature", 24), {})
+    models = load_models(registry)
+    kept = models[("temperature", 24)]
+
+    unchanged = refresh_models(registry, models)
+    # versions are timestamps to the second, the next save needs a later one.
+    time.sleep(1.1)
+    second = registry.save(_train_tiny(spark), model_name("pm2_5", 1), {})
+    refreshed = refresh_models(registry, models)
+
+    assert unchanged[("pm2_5", 1)] is models[("pm2_5", 1)]
+    assert refreshed[("pm2_5", 1)][1] == second
+    assert second != models[("pm2_5", 1)][1]
+    assert refreshed[("temperature", 24)] is kept
+    assert model_versions(refreshed) == {"pm2_5_h1": second, "temperature_h24": kept[1]}
 
 
 def test_forecast_rows_per_location_and_model(spark, tmp_path) -> None:

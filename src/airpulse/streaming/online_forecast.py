@@ -25,17 +25,38 @@ def model_name(target: str, horizon_h: int) -> str:
     return f"{target}_h{horizon_h}"
 
 
-def load_models(registry: ModelRegistry) -> dict[tuple[str, int], tuple[PipelineModel, str]]:
-    """every available target and horizon, a missing model is skipped rather than fatal."""
-    models = {}
+Models = dict[tuple[str, int], tuple[PipelineModel, str]]
+
+
+def refresh_models(registry: ModelRegistry, models: Models) -> Models:
+    """load every model whose latest version is not the one in memory, keep the others.
+
+    training writes the pipeline first and moves the latest pointer of the model last, so a
+    version is only seen here once it is complete. reading the pointers is a few small calls
+    on hdfs, cheap enough for every micro batch. a model that was never trained is skipped.
+    """
+    refreshed = dict(models)
     for target in TARGETS:
         for horizon in HORIZONS_H:
-            try:
-                model, meta = registry.load(model_name(target, horizon))
-            except FileNotFoundError:
+            name = model_name(target, horizon)
+            latest = registry.latest_version(name)
+            loaded = models.get((target, horizon))
+            if latest is None or (loaded is not None and loaded[1] == latest):
                 continue
-            models[(target, horizon)] = (model, meta["version"])
-    return models
+            model, meta = registry.load(name, latest)
+            refreshed[(target, horizon)] = (model, meta["version"])
+    return refreshed
+
+
+def load_models(registry: ModelRegistry) -> Models:
+    """every available target and horizon at its latest version."""
+    return refresh_models(registry, {})
+
+
+def model_versions(models: Models) -> dict[str, str]:
+    return {
+        model_name(target, horizon): version for (target, horizon), (_, version) in models.items()
+    }
 
 
 def fill_missing_features(df: DataFrame) -> DataFrame:

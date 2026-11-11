@@ -33,7 +33,12 @@ from airpulse.streaming.anomaly_alerts import (
     weather_threshold_alerts,
 )
 from airpulse.streaming.clean_events import clean_streams, raw_streams, to_kafka_frame
-from airpulse.streaming.online_forecast import forecast_from_windows, load_models
+from airpulse.streaming.online_forecast import (
+    forecast_from_windows,
+    load_models,
+    model_versions,
+    refresh_models,
+)
 from airpulse.streaming.progress import ProgressLogger
 from airpulse.streaming.window_metrics import (
     air_windows,
@@ -225,11 +230,15 @@ def start_forecast(spark: SparkSession, cfg: Config, run_id: str, args, log) -> 
     log.info("loaded %d models", len(state["models"]))
 
     def sink(batch_df: DataFrame, batch_id: int) -> None:
-        if batch_id % 60 == 0:
-            state["models"] = load_models(registry)
-        if not state["models"]:
-            return
         try:
+            # a version published by the batch layer is served from the next micro batch on,
+            # batches only run when the producer sends data, so counting them is no clock.
+            models = refresh_models(registry, state["models"])
+            if model_versions(models) != model_versions(state["models"]):
+                log.info("serving model versions %s", model_versions(models))
+            state["models"] = models
+            if not models:
+                return
             latest_air = latest_per_location(clean_air(batch_df))
             # only the weather metrics are joined, the metadata columns exist on both sides.
             weather = read_table(spark, cfg, tables.weather_latest).select(

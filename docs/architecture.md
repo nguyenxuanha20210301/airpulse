@@ -23,7 +23,9 @@ the dashboards.
      spike alerts (PM2.5 more than three standard deviations above its 24h mean) to the
      `air.alerts` topic and Cassandra.
    - `forecast` scores the latest values with the models of the batch layer and writes the
-     1h, 6h and 24h forecasts to Cassandra.
+     1h, 6h and 24h forecasts to Cassandra. Before every micro batch it compares the latest
+     version of each model in the registry with the one in memory, so a model trained by the
+     batch layer is served from the next producer cycle on.
 3. The batch layer is a chain of Spark applications, run in order by `make batch`, with a
    nightly schedule per job that starts suspended on a laptop, see `docs/runbook.md`.
    - `raw_to_clean` rebuilds the clean layer exactly, the last ingested copy of each event wins.

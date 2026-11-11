@@ -198,3 +198,18 @@ holds 4,536 point days, 63 points for 72 days, all with weather and air quality.
 
 The order did not change, the trees win at 1 h and 6 h and persistence stays ahead one day
 ahead, now by 3 percent for PM2.5 and 6 percent for temperature.
+
+## Model versions in the speed layer
+
+The same restart showed that the forecast query kept serving the models it had loaded at its
+start. It read the registry again every 60 micro batches, and a micro batch only runs when the
+producer has sent data, once every 30 minutes, so a new version was picked up after about 30
+hours. The forecasts up to 2026-11-09 01:00 UTC carry the versions trained on 2026-11-07, an
+hour after `ml-train` had published the next ones, and the forecast for 2026-11-11 19:00 UTC
+still carried the versions of 2026-11-09 although training had finished a few minutes before.
+
+The query now compares the `latest` pointer of every model with the version in memory before
+each micro batch and loads the ones that changed. On the cluster `ml-train` published six
+versions between 20:14 and 20:19 UTC on 2026-11-11, the micro batch of the next producer cycle
+at 20:20 logged `serving model versions` with all six, and the 63 forecasts per target and
+horizon for 20:00 UTC carry them. The driver was not restarted.
