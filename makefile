@@ -17,23 +17,34 @@ export PYSPARK_DRIVER_PYTHON ?= $(CURDIR)/$(BIN)/python
 # tool caches stay inside the repo so nothing is written outside it.
 export UV_CACHE_DIR ?= $(CURDIR)/.cache/uv
 export PIP_CACHE_DIR ?= $(CURDIR)/.cache/pip
+# jupyter, ipython and matplotlib keep their settings and caches inside the repo as well.
+export JUPYTER_CONFIG_DIR ?= $(CURDIR)/.cache/jupyter/config
+export JUPYTER_DATA_DIR ?= $(CURDIR)/.cache/jupyter/data
+export JUPYTER_RUNTIME_DIR ?= $(CURDIR)/.cache/jupyter/runtime
+export IPYTHONDIR ?= $(CURDIR)/.cache/ipython
+export MPLCONFIGDIR ?= $(CURDIR)/.cache/matplotlib
+NOTEBOOK_OUT := .cache/notebooks
 
-.PHONY: help setup lint format test check schemas clean cluster-up cluster-down deploy port-forward demo batch
+.PHONY: help setup setup-notebook lint format test check schemas clean cluster-up cluster-down deploy port-forward demo batch notebook notebook-run notebook-clean
 
 help:
-	@echo "setup         create the virtualenv and install the package with dev tools"
-	@echo "format        format python code with ruff"
-	@echo "lint          run ruff checks without changing files"
-	@echo "test          run unit tests"
-	@echo "check         format check, lint and unit tests, run before every commit"
-	@echo "schemas       export the json schema files under schemas/events"
-	@echo "clean         remove caches and build output, keeps the virtualenv"
-	@echo "cluster-up    create the local kubernetes cluster, PROFILE=dev by default"
-	@echo "cluster-down  delete the local kubernetes cluster"
-	@echo "deploy        install or upgrade every component on the cluster"
-	@echo "port-forward  expose dashboards and apis on localhost"
-	@echo "demo          run the end to end demo scenario"
-	@echo "batch         run every batch job once in order and refresh the trino views"
+	@echo "setup           create the virtualenv and install the package with dev tools"
+	@echo "format          format python code with ruff"
+	@echo "lint            run ruff checks without changing files"
+	@echo "test            run unit tests"
+	@echo "check           format check, lint and unit tests, run before every commit"
+	@echo "schemas         export the json schema files under schemas/events"
+	@echo "clean           remove caches and build output, keeps the virtualenv"
+	@echo "cluster-up      create the local kubernetes cluster, PROFILE=dev by default"
+	@echo "cluster-down    delete the local kubernetes cluster"
+	@echo "deploy          install or upgrade every component on the cluster"
+	@echo "port-forward    expose dashboards and apis on localhost"
+	@echo "demo            run the end to end demo scenario"
+	@echo "batch           run every batch job once in order and refresh the trino views"
+	@echo "setup-notebook  add jupyter, matplotlib and the trino client to the virtualenv"
+	@echo "notebook        open jupyter lab on the notebooks directory"
+	@echo "notebook-run    execute every notebook, the copies with output go to $(NOTEBOOK_OUT)"
+	@echo "notebook-clean  remove the output of every notebook, run before a commit"
 
 setup:
 ifdef UV
@@ -82,3 +93,20 @@ demo:
 
 batch:
 	sh $(SCRIPTS)/run_batch.sh $(PROFILE)
+
+setup-notebook:
+ifdef UV
+	uv pip install --python $(BIN)/python -e ".[dev,notebook]"
+else
+	$(BIN)/pip install -e ".[dev,notebook]"
+endif
+
+notebook:
+	$(BIN)/jupyter lab --notebook-dir notebooks
+
+# the executed copies keep their output for reading, the notebooks in git stay without any.
+notebook-run:
+	$(BIN)/jupyter nbconvert --to html --execute --output-dir $(NOTEBOOK_OUT) notebooks/*.ipynb
+
+notebook-clean:
+	$(BIN)/jupyter nbconvert --clear-output --inplace notebooks/*.ipynb

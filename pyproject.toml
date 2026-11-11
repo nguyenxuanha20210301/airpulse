@@ -28,6 +28,7 @@ dev = [
 notebook = [
     "jupyterlab>=4.0",
     "matplotlib>=3.8",
+    "trino>=0.330",
 ]
 
 [tool.setuptools.packages.find]

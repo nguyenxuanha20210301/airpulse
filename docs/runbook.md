@@ -89,10 +89,11 @@ cluster that stays on, the schedules can be resumed one by one.
 kubectl -n airpulse patch scheduledsparkapplication batch-raw-to-clean --type merge -p '{"spec":{"suspend":false}}'
 ```
 
-A gap in the history, for example when an API refused requests during a backfill, is filled by
-running the backfill module on the template of a scheduled job, then the batch jobs in order.
-The events of the gap get the same ids as any copy already stored, so `raw_to_clean` keeps one
-row per hour.
+A gap in the history, for example when an API refused requests during a backfill or the cluster
+was stopped for a few days, is filled by running the backfill module on the template of a
+scheduled job, then the batch jobs in order. The events of the gap get the same ids as any copy
+already stored, so `raw_to_clean` keeps one row per hour. The range may end today, the hours
+that have not started yet are left out.
 
 ```bash
 APP_NAME=backfill-gap MODULE=airpulse.ingestion.backfill EXECUTORS=1 \
@@ -135,7 +136,26 @@ counts.
 The scripts under `tests/fault_tolerance` kill one component at a time and print what to
 watch, a broker, a datanode, a Cassandra node, a Spark executor or a whole worker node.
 
-## 7. Tear down
+## 7. Notebooks
+
+```bash
+make setup-notebook
+make notebook
+```
+
+The first target adds Jupyter, matplotlib and the Trino client to the virtualenv, the second
+opens Jupyter on `notebooks/`. A notebook reads its tables through Trino and keeps every result
+as a parquet file under `data/eda`, which git ignores. With those files in place it runs
+without the cluster. To take a new extract, forward Trino with `make port-forward`, set
+`AIRPULSE_PROFILE` and `AIRPULSE_TRINO__URL=http://localhost:8080` in `.env` and set `REFRESH`
+to true in the first code cell.
+
+`make notebook-run` executes every notebook and writes an html copy with its output to
+`.cache/notebooks`. The notebooks in git carry no output, `make notebook-clean` removes it and
+`make check` fails while one still has some. The exploratory notebook writes its charts to
+`docs/images` with the prefix `eda`.
+
+## 8. Tear down
 
 ```bash
 make cluster-down

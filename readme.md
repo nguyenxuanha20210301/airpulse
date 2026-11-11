@@ -49,6 +49,7 @@ src/airpulse/   the python package, one subpackage per layer
   mapreduce/    one job written in the MapReduce pattern for illustration
   ml/           baselines, training, evaluation, model registry on HDFS
   serving/      sinks for the realtime view
+  analysis/     trino results as pandas frames, summaries and chart style for the notebooks
 deploy/         kubernetes cluster definition, images, helm values, manifests and scripts
 dashboards/     exported Superset and Grafana dashboards
 notebooks/      exploration notebooks, committed without outputs
@@ -112,6 +113,24 @@ The step by step procedure, including laptop runs of the jobs on local directori
 
 Every job runs as `python -m <module> --config configs/<profile>.yaml` and accepts `--input`
 and `--output` overrides for local runs.
+
+## Notebooks
+
+`notebooks/01_eda_air_quality_and_weather.ipynb` explores the clean and curated tables, the
+quality of the data, pollution by region, day and hour, the weather as a driver of PM2.5 and
+the errors of the forecast models. It reads the tables through Trino and keeps every result as
+a parquet file under `data/eda`, so it runs again while the cluster is stopped. Its charts are
+in `docs/images` with the prefix `eda`.
+
+```bash
+make setup-notebook
+make notebook
+make notebook-run
+```
+
+`make notebook-run` writes html copies with output to `.cache/notebooks`. The notebooks in git
+carry no output, `make notebook-clean` removes it. Taking a new extract is described in
+`docs/runbook.md`.
 
 ## Version matrix
 
