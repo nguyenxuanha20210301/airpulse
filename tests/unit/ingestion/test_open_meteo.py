@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 
 import pytest
-from tests.unit.ingestion.conftest import FakeSession, open_meteo_payload
+from tests.unit.ingestion.conftest import NOW, FakeSession, open_meteo_payload
 
 from airpulse.common.schemas import WeatherEvent
 from airpulse.ingestion.sources.base import FetchWindow
@@ -134,6 +134,34 @@ def test_history_window_uses_the_archive_url(config, locations) -> None:
     assert session.calls[0]["url"] == config.sources.open_meteo.archive_url
     assert captured[0]["start_date"] == "2020-01-01"
     assert len(events) == 2
+
+
+def test_history_window_ending_today_drops_the_hours_still_ahead(
+    config, locations, monkeypatch
+) -> None:
+    monkeypatch.setattr("airpulse.ingestion.sources.open_meteo.utc_now", lambda: NOW)
+
+    def weather(params):
+        return open_meteo_payload(
+            ["temperature_2m"], TIMES, [{"temperature_2m": [20.0, 21.0, 22.0, 23.0]}] * 2
+        )
+
+    def air(params):
+        return open_meteo_payload(["pm2_5"], TIMES, [{"pm2_5": [10.0, 11.0, 12.0, 13.0]}] * 2)
+
+    session = FakeSession([("air-quality-api", air), ("api.open-meteo.com", weather)])
+    source = OpenMeteoSource(config, session)
+    today = FetchWindow(start_date=NOW.date(), end_date=NOW.date())
+
+    weather_events = source.fetch_weather(locations, today, "r1")
+    air_events = source.fetch_air(locations, today, "r1")
+
+    last_started_hour = datetime(2026, 11, 6, 17, tzinfo=timezone.utc)
+    assert session.calls[0]["params"]["end_date"] == "2026-11-06"
+    assert len(weather_events) == 6
+    assert len(air_events) == 6
+    assert max(e.event_ts_utc for e in weather_events) == last_started_hour
+    assert max(e.event_ts_utc for e in air_events) == last_started_hour
 
 
 def test_recent_history_comes_from_the_forecast_endpoint(config) -> None:

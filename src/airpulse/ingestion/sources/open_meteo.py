@@ -151,6 +151,8 @@ class OpenMeteoSource(Source):
         params = {**base_params(locations, window), "hourly": ",".join(self.weather_map)}
         payload = get_json(self.session, url, params, self.cfg.timeout_s)
         now = utc_now()
+        # a history range that ends today comes back with forecast values for the hours still
+        # ahead, so the cutoff applies to every window and not only to the live one.
         return parse_hourly(
             payload,
             locations,
@@ -160,7 +162,7 @@ class OpenMeteoSource(Source):
             self.name,
             run_id,
             now,
-            cutoff=None if window.is_history else floor_to_hour(now),
+            cutoff=floor_to_hour(now),
         )
 
     def fetch_air(
@@ -178,5 +180,5 @@ class OpenMeteoSource(Source):
             self.name,
             run_id,
             now,
-            cutoff=None if window.is_history else floor_to_hour(now),
+            cutoff=floor_to_hour(now),
         )
