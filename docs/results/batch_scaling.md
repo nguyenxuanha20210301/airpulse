@@ -51,8 +51,8 @@ Cassandra and HDFS. The serial part comes from the driver and the storage layout
 - The writes of `raw_to_clean` and `features` replace one directory per day, the commit renames
   them one after the other on the driver. At ten years the commit of the air layer alone took
   140 s for 3,672 directories, against 531 s for the write job itself.
-- Every file holds a single day of 63 points, about 80 KB, far below the 128 MB block size of
-  HDFS, so the namenode and the datanodes handle many tiny requests.
+- Every file holds a single day of 63 points, about 80 KB, far below the 64 MB block size this
+  cluster sets for HDFS, so the namenode and the datanodes handle many tiny requests.
 
 On separate machines more executors would also bring more disks and cores. On one machine the
 storage layout matters more, monthly partitions for closed months and a compaction of the raw

@@ -40,8 +40,10 @@ while the pod is away. Every block has two copies on different nodes.
 
 The read succeeded with the same result, the HDFS client skipped the dead node and read the
 second copy of each block. It took 64 s instead of a few seconds because the namenode still
-listed the dead datanode, which only gets declared dead after about ten minutes without
-heartbeat, so every block read tried it first and waited for the connection to fail.
+listed the deleted datanode. This cluster sets the recheck interval to 15 s and keeps the
+heartbeat at 3 s, so a datanode is only declared dead after 60 s without heartbeat, against
+ten and a half minutes with the Hadoop defaults. Until then reads were still sent to its
+address and waited for the connection to fail before they moved to the second copy.
 
 ## Cassandra node
 

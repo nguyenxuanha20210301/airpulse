@@ -1,8 +1,9 @@
 #!/bin/sh
 # deletes one hdfs datanode and counts the whole raw air layer through trino while it is away.
 # every block has a second copy on another node, so the count must equal the one taken before.
-# the hdfs client skips the dead node by itself, the namenode only declares it dead after about
-# ten minutes, which a pod restart never reaches.
+# the hdfs client skips the dead node by itself. the namenode only declares it dead after 60 s
+# without heartbeat, two recheck intervals of 15 s plus ten heartbeats of 3 s, about the time
+# the pod needs to come back.
 set -eu
 . "$(dirname "$0")/common.sh"
 victim=${1:-hdfs-datanode-1}
