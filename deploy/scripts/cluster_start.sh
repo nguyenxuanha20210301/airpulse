@@ -22,9 +22,23 @@ if [ "$(docker inspect -f '{{.State.Running}}' $control)" = "true" ]; then
   echo "cluster $CLUSTER_NAME is already running"
   exit 0
 fi
-stopped_on=$(docker inspect -f '{{.State.FinishedAt}}' $control | cut -c1-10)
+# after a power cut docker stamps the stop with the clock of the next boot, which can lie far in
+# the past on a machine without a clock battery. the cluster cannot have stopped before it last
+# started, so the later of the two dates opens the gap.
+stopped_on=$(docker inspect -f '{{.State.StartedAt}} {{.State.FinishedAt}}' $control \
+  | tr ' ' '\n' | cut -c1-10 | sort | tail -1)
 started=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-docker start $control $workers >/dev/null
+
+# docker hands out addresses in the order the containers start, and the control plane has to
+# come back on the address the workers and the kubeconfig know. every node keeps its last
+# address in /kind/old-ipv4, so the nodes start in the order of those addresses and each one
+# gets its own again.
+old_address() {
+  docker cp "$1:/kind/old-ipv4" - 2>/dev/null | tar -xO 2>/dev/null
+}
+ordered=$(for node in $control $workers; do echo "$(old_address "$node") $node"; done \
+  | sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n | awk '{print $NF}')
+docker start $ordered >/dev/null
 kubectl config use-context "kind-$CLUSTER_NAME" >/dev/null
 
 # usage wait_until <seconds> <what> <command>, the command is tried every five seconds.
