@@ -7,8 +7,8 @@
 
 The history is the backfilled weeks copied back in time by `airpulse.ingestion.amplify`, 68 days
 per copy, 6 copies for one year, 27 for five and 54 for ten, under `/airpulse-bench/y<years>`.
-Each copy gets new event ids, so `raw_to_clean` keeps them all. One day partition holds about
-3,400 rows and 80 KB of Parquet per dataset.
+Each copy gets new event ids, so `raw_to_clean` keeps them all. One day holds about 3,400 raw
+rows over the two datasets, and each dataset stores it as one Parquet file of about 80 KB.
 
 Every application gets executors of one core, 1536m of heap and 1g of overhead, and 96 shuffle
 partitions that adaptive execution merges again for small inputs. The time is read from the
@@ -51,7 +51,9 @@ Cassandra and HDFS. The serial part comes from the driver and the storage layout
 - The writes of `raw_to_clean` and `features` replace one directory per day, the commit renames
   them one after the other on the driver. At ten years the commit of the air layer alone took
   140 s for 3,672 directories, against 531 s for the write job itself.
-- Every file holds a single day of 63 points, about 80 KB, far below the 64 MB block size this
+- A raw file holds a single day of 63 points in about 80 KB, and `raw_to_clean` writes a clean
+  day as several smaller files, two at one year, six at five years and eleven of about 19 KB at
+  ten, counted with `hdfs dfs -count`. All of them are far below the 64 MB block size this
   cluster sets for HDFS, so the namenode and the datanodes handle many tiny requests.
 
 On separate machines more executors would also bring more disks and cores. On one machine the
